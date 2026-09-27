@@ -1,0 +1,13 @@
+{
+  "name": "finuroven-project",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ФинУровень — Telegram Mini App (Frontend React + Backend Express + Prisma)",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd backend && npm run build && cd ../frontend && npm run build",
+    "test": "cd backend && npm test",
+    "seed": "cd backend && npm run prisma:seed"
+  }
+}

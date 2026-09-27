@@ -1,0 +1,100 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  telegramId    String         @unique
+  username      String?
+  firstName     String
+  gender        String         @default("none") // "male" | "female" | "none"
+  age           Int?
+  city          String?
+  occupation    String?        // "найм" | "свой бизнес" | "фриланс" | "студент" | "другое"
+  currency      String         @default("UZS")
+  timezone      String         @default("Asia/Tashkent")
+  xp            Int            @default(0)
+  level         Int            @default(1)
+  currentStreak Int            @default(0)
+  bestStreak    Int            @default(0)
+  lastQuizDate  String?        // "YYYY-MM-DD"
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  financeItems  FinanceItem[]
+  quizAttempts  QuizAttempt[]
+  xpEvents      XpEvent[]
+  achievements  Achievement[]
+}
+
+model FinanceItem {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  category       String   // "income" | "fixed_expense" | "daily_expense" | "deposit" | "loan"
+  subtype        String   // "salary" | "rent" | "utilities" | "food" | "consumer" | "none_deposit" | "none_loan" etc.
+  title          String
+  amount         Float    @default(0)
+  rate           Float?
+  term           Int?
+  monthlyPayment Float?
+  extra          String?  // JSON string for additional parameters
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Quiz {
+  id         Int           @id @default(autoincrement())
+  dayIndex   Int           @unique
+  date       String?       // "YYYY-MM-DD"
+  newsTitle  String
+  newsText   String
+  questions  String        // JSON array of 3 questions
+  createdAt  DateTime      @default(now())
+
+  attempts   QuizAttempt[]
+}
+
+model QuizAttempt {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  quizId       Int
+  answers      String   // JSON array of selected indices
+  correctCount Int
+  xpEarned     Int
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz         Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, quizId])
+}
+
+model XpEvent {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  key       String   // e.g. "field:income.salary", "field:deposit.first", "quiz:1"
+  amount    Int
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+}
+
+model Achievement {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  code       String   // e.g. "first_quiz", "streak_7", "streak_30", "profile_100", "level_10", etc.
+  unlockedAt DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, code])
+}

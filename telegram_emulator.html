@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telegram WebApp Emulator — OnPul by NIYAT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-workspace: #0f172a;
+      --panel-bg: #1e293b;
+      --panel-border: #334155;
+      --tg-header-bg: #ffffff;
+      --tg-chat-bg: #e4e9ee;
+      --tg-primary: #059669;
+      --tg-blue: #2481cc;
+      --text-light: #f8fafc;
+      --text-dim: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at top center, #1e293b 0%, #0f172a 100%);
+      color: var(--text-light);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Top Emulator Bar */
+    .emulator-topbar {
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--panel-border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 100;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      font-weight: 800;
+      font-size: 14px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+    }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .brand-subtitle {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .server-status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid var(--panel-border);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+      animation: pulseDot 2s infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    /* Main Workspace Layout */
+    .workspace-container {
+      display: flex;
+      flex: 1;
+      padding: 24px;
+      gap: 32px;
+      max-width: 1500px;
+      margin: 0 auto;
+      width: 100%;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    /* Control Sidebar */
+    .controls-sidebar {
+      width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .control-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .control-card-title {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: #38bdf8;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-action {
+      background: #334155;
+      border: 1px solid #475569;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 10px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s;
+      width: 100%;
+      margin-bottom: 8px;
+      text-align: left;
+    }
+
+    .btn-action:hover {
+      background: #475569;
+      border-color: #64748b;
+      transform: translateY(-1px);
+    }
+
+    .btn-action.primary {
+      background: linear-gradient(135deg, #059669, #10b981);
+      border: none;
+      color: white;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-action.primary:hover {
+      background: linear-gradient(135deg, #047857, #059669);
+    }
+
+    .btn-action.telegram {
+      background: #2481cc;
+      border: none;
+    }
+
+    .btn-action.telegram:hover {
+      background: #1c6ba8;
+    }
+
+    /* Device Showcase */
+    .device-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* iPhone 15 Pro Frame */
+    .phone-frame {
+      width: 410px;
+      height: 850px;
+      background: #000;
+      border-radius: 54px;
+      padding: 12px;
+      position: relative;
+      box-shadow: 
+        0 0 0 2px #475569,
+        0 0 0 6px #1e293b,
+        0 25px 50px -12px rgba(0, 0, 0, 0.7),
+        0 0 40px rgba(5, 150, 105, 0.15);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .phone-screen {
+      flex: 1;
+      background: var(--tg-chat-bg);
+      border-radius: 44px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Dynamic Island */
+    .dynamic-island {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 125px;
+      height: 32px;
+      background: #000;
+      border-radius: 20px;
+      z-index: 99;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+    }
+
+    .camera-lens {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+
+    .island-sensor {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #0f172a;
+    }
+
+    /* Status Bar */
+    .status-bar {
+      height: 48px;
+      padding: 12px 24px 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      z-index: 90;
+      background: var(--tg-header-bg);
+    }
+
+    .status-icons {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    /* Telegram Chat Header */
+    .tg-chat-header {
+      background: var(--tg-header-bg);
+      padding: 8px 16px 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e2e8f0;
+      z-index: 80;
+    }
+
+    .tg-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .tg-back-btn {
+      color: var(--tg-blue);
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .tg-bot-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10b981, #059669);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 18px;
+      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
+    }
+
+    .tg-bot-meta {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tg-bot-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .verified-icon {
+      color: #0284c7;
+      font-size: 14px;
+    }
+
+    .tg-bot-status {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .tg-header-right {
+      color: var(--tg-blue);
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    /* Telegram Chat Body */
+    .tg-chat-messages {
+      flex: 1;
+      padding: 16px 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #e4e9ee url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2394a3b8' fill-opacity='0.08' fill-rule='evenodd'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    .tg-chat-messages::-webkit-scrollbar {
+      width: 4px;
+    }
+    .tg-chat-messages::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 4px;
+    }
+
+    .tg-date-divider {
+      align-self: center;
+      background: rgba(0, 0, 0, 0.18);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 12px;
+      border-radius: 12px;
+      margin: 4px 0;
+    }
+
+    .msg-bubble {
+      max-width: 86%;
+      padding: 10px 14px;
+      border-radius: 16px;
+      font-size: 13px;
+      line-height: 1.45;
+      position: relative;
+      word-wrap: break-word;
+    }
+
+    .msg-bubble.user {
+      align-self: flex-end;
+      background: #effdde;
+      color: #0f172a;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+
+    .msg-bubble.bot {
+      align-self: flex-start;
+      background: #ffffff;
+      color: #0f172a;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .msg-time {
+      font-size: 10px;
+      color: #94a3b8;
+      float: right;
+      margin-left: 10px;
+      margin-top: 4px;
+    }
+
+    /* Telegram Inline Buttons */
+    .tg-inline-keyboard {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .tg-inline-btn {
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      color: #4338ca;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .tg-inline-btn:hover {
+      background: #e0e7ff;
+    }
+
+    .tg-inline-btn.primary {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+      color: #059669;
+      font-weight: 800;
+    }
+
+    .tg-inline-btn.primary:hover {
+      background: #d1fae5;
+    }
+
+    /* Telegram Bottom Input Bar */
+    .tg-bottom-bar {
+      background: #ffffff;
+      padding: 8px 12px 14px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-top: 1px solid #e2e8f0;
+      z-index: 80;
+    }
+
+    .tg-menu-btn {
+      background: #0284c7;
+      color: #ffffff;
+      border: none;
+      border-radius: 18px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+      transition: all 0.2s;
+    }
+
+    .tg-menu-btn:hover {
+      background: #0369a1;
+      transform: scale(1.02);
+    }
+
+    .tg-input-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    .tg-input {
+      width: 100%;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 8px 14px;
+      font-size: 13px;
+      outline: none;
+      color: #0f172a;
+    }
+
+    .tg-input:focus {
+      border-color: var(--tg-blue);
+      background: #fff;
+    }
+
+    .tg-send-btn {
+      background: var(--tg-blue);
+      color: white;
+      border: none;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: transform 0.2s;
+    }
+
+    .tg-send-btn:hover {
+      transform: scale(1.08);
+    }
+
+    /* Telegram WebApp Slide-up Sheet */
+    .webapp-modal-sheet {
+      position: absolute;
+      top: 48px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #ffffff;
+      z-index: 95;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .webapp-modal-sheet.open {
+      transform: translateY(0);
+    }
+
+    /* WebApp Header Bar */
+    .webapp-header {
+      height: 44px;
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      user-select: none;
+    }
+
+    .webapp-close-btn {
+      color: var(--tg-blue);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      background: none;
+      border: none;
+    }
+
+    .webapp-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .webapp-more-btn {
+      color: var(--tg-blue);
+      font-size: 18px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-weight: bold;
+    }
+
+    .webapp-iframe {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #f8fafc;
+    }
+
+    /* Instructions card */
+    .info-box {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+    .info-box strong {
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <header class="emulator-topbar">
+    <div class="brand-wrap">
+      <div class="brand-badge">TELEGRAM SIMULATOR</div>
+      <div>
+        <div class="brand-title">OnPul by NIYAT — Interactive Mobile Emulator</div>
+        <div class="brand-subtitle">Тестирование Telegram Mini App, WebApp API и диалогового бота</div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <div class="server-status-pill">
+        <div class="status-dot" id="serverDot"></div>
+        <span id="serverStatusText">Проверка сервера (localhost:8080)...</span>
+      </div>
+      <a href="/admin" target="_blank" style="color: #38bdf8; font-size: 12px; font-weight: 700; text-decoration: none; background: rgba(56, 189, 248, 0.1); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.3);">
+        📊 Админ-панель ↗
+      </a>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="workspace-container">
+
+    <!-- CONTROLS SIDEBAR -->
+    <aside class="controls-sidebar">
+      
+      <!-- Launch / Actions -->
+      <div class="control-card">
+        <div class="control-card-title">🚀 Быстрые действия</div>
+        <button class="btn-action primary" onclick="openMiniApp()">
+          <span>📱</span>
+          <span>Открыть Mini App (Всплывающее окно)</span>
+        </button>
+        <button class="btn-action telegram" onclick="sendSampleExpense('Бензин 180000')">
+          <span>⛽</span>
+          <span>Отправить: «Бензин 180000» в чат</span>
+        </button>
+        <button class="btn-action" onclick="sendSampleExpense('Обед 45к')">
+          <span>🍽️</span>
+          <span>Отправить: «Обед 45к» в чат</span>
+        </button>
+        <button class="btn-action" onclick="sendRefStart()">
+          <span>🎁</span>
+          <span>Имитировать вход по рефссылке</span>
+        </button>
+        <button class="btn-action" onclick="reloadMiniApp()">
+          <span>🔄</span>
+          <span>Перезагрузить Mini App</span>
+        </button>
+      </div>
+
+      <!-- Mock User Profile -->
+      <div class="control-card">
+        <div class="control-card-title">👤 Профиль Telegram (Mock)</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <label style="font-size: 11px; color: var(--text-dim);">Выберите пользователя Telegram:</label>
+          <select id="userSelector" onchange="changeMockUser(this.value)" style="background: #334155; color: #fff; border: 1px solid #475569; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; outline: none;">
+            <option value="nodir">🦁 Нодирбек (@nodir_invest) — Lvl 1</option>
+            <option value="aziz">⚡ Азиз Каримов (@aziz_finance) — Lvl 2</option>
+            <option value="shahzod">👑 Шахзод Бахромов (@shahzod_capital) — Lvl 3</option>
+          </select>
+          <div style="font-size: 11px; color: #34d399; margin-top: 4px;">
+            ✓ Данные автоматически передаются в <code>window.Telegram.WebApp.initDataUnsafe</code>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real Bot Instructions -->
+      <div class="control-card">
+        <div class="control-card-title">🤖 Подключение реального бота</div>
+        <div class="info-box">
+          <p style="margin-bottom: 6px;">Чтобы подключить бота на вашем телефоне:</p>
+          <ol style="padding-left: 16px; margin-bottom: 8px;">
+            <li>Получите токен у <strong>@BotFather</strong></li>
+            <li>Добавьте в <code>.env</code>: <code>BOT_TOKEN=...</code></li>
+            <li>Запустите <code>python bot.py</code></li>
+          </ol>
+          <p>В эмуляторе ниже бот уже работает <strong>интерактивно</strong> и сохраняет траты в локальную базу!</p>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- DEVICE AREA (IPHONE FRAME) -->
+    <div class="device-area">
+      <div class="phone-frame" id="deviceFrame">
+        
+        <!-- Screen -->
+        <div class="phone-screen">
+
+          <!-- Dynamic Island -->
+          <div class="dynamic-island">
+            <div class="camera-lens"></div>
+            <div class="island-sensor"></div>
+          </div>
+
+          <!-- Status Bar -->
+          <div class="status-bar">
+            <span id="liveClock">09:41</span>
+            <div class="status-icons">
+              <span>5G</span>
+              <span>📶</span>
+              <span>🔋 98%</span>
+            </div>
+          </div>
+
+          <!-- Telegram Chat Header -->
+          <div class="tg-chat-header">
+            <div class="tg-header-left">
+              <span class="tg-back-btn">‹</span>
+              <div class="tg-bot-avatar">⚡</div>
+              <div class="tg-bot-meta">
+                <div class="tg-bot-title">
+                  <span>OnPul by NIYAT</span>
+                  <span class="verified-icon">✓</span>
+                </div>
+                <div class="tg-bot-status">бот • в сети</div>
+              </div>
+            </div>
+            <div class="tg-header-right">⋮</div>
+          </div>
+
+          <!-- Telegram Chat Messages List -->
+          <div class="tg-chat-messages" id="chatMessages">
+            <div class="tg-date-divider">Сегодня</div>
+
+            <!-- Bot Welcome Message -->
+            <div class="msg-bubble bot">
+              <div>
+                <strong>👋 Ассалому алейкум!</strong><br><br>
+                Добро пожаловать в <strong>OnPul by NIYAT</strong> — ваш персональный финансовый помощник и трекер капитала в Узбекистане!<br><br>
+                🎮 <strong>Возможности:</strong><br>
+                • Быстрый учет расходов прямо в чате<br>
+                • Накопления на цели (Авто, Дом, Техника)<br>
+                • Банковские вклады РУз (до 24%) и IMAN<br>
+                • Прокачка уровня и ценные призы!<br><br>
+                <em>Нажмите кнопку ниже, чтобы открыть приложение:</em>
+              </div>
+
+              <!-- Inline buttons -->
+              <div class="tg-inline-keyboard">
+                <button class="tg-inline-btn primary" onclick="openMiniApp()">
+                  <span>🚀</span>
+                  <span>Открыть OnPul Mini App</span>
+                </button>
+                <button class="tg-inline-btn" onclick="simulateBotShare()">
+                  <span>👥</span>
+                  <span>Пригласить друга (+200 XP)</span>
+                </button>
+              </div>
+
+              <span class="msg-time">09:41</span>
+            </div>
+
+            <!-- Sample user message -->
+            <div class="msg-bubble user">
+              бензин 150000
+              <span class="msg-time">09:42</span>
+            </div>
+
+            <!-- Sample bot reply -->
+            <div class="msg-bubble bot">
+              ✅ <strong>Расход успешно учтен в OnPul!</strong><br>
+              ⛽ <strong>Бензин:</strong> <code>150,000 UZS</code><br>
+              ⚡ <strong>+10 XP начислено!</strong> Прогресс обновлен.<br><br>
+              <button class="tg-inline-btn primary" style="width: 100%; font-size: 12px; padding: 6px 10px;" onclick="openMiniApp()">
+                📊 Посмотреть в приложении
+              </button>
+              <span class="msg-time">09:42</span>
+            </div>
+
+          </div>
+
+          <!-- Telegram Bottom Chat Bar -->
+          <div class="tg-bottom-bar">
+            <!-- Official Telegram WebApp Menu Button -->
+            <button class="tg-menu-btn" onclick="openMiniApp()" title="Запустить Telegram WebApp">
+              <span>📱</span>
+              <span>OnPul App</span>
+            </button>
+
+            <!-- Chat Input -->
+            <div class="tg-input-wrap">
+              <input type="text" id="chatInput" class="tg-input" placeholder="Сообщение или «бензин 180к»..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+            </div>
+
+            <!-- Send button -->
+            <button class="tg-send-btn" onclick="sendChatMessage()" title="Отправить">
+              ➤
+            </button>
+          </div>
+
+          <!-- Telegram WebApp Slide-up Sheet (Mini App View) -->
+          <div class="webapp-modal-sheet" id="webAppSheet">
+            <div class="webapp-header">
+              <button class="webapp-close-btn" onclick="closeMiniApp()">Закрыть</button>
+              <div class="webapp-title">
+                <span>OnPul by NIYAT</span>
+              </div>
+              <button class="webapp-more-btn" onclick="reloadMiniApp()">⋮</button>
+            </div>
+
+            <!-- The Mini App is loaded inside this responsive iframe -->
+            <iframe id="miniAppIframe" class="webapp-iframe" src="http://localhost:3000"></iframe>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // MOCK TELEGRAM USERS
+    const mockUsers = {
+      nodir: {
+        id: 77712345,
+        first_name: "Нодирбек",
+        last_name: "",
+        username: "nodir_invest",
+        language_code: "ru",
+        avatar: "🦁"
+      },
+      aziz: {
+        id: 88823456,
+        first_name: "Азиз",
+        last_name: "Каримов",
+        username: "aziz_finance",
+        language_code: "uz",
+        avatar: "⚡"
+      },
+      shahzod: {
+        id: 99934567,
+        first_name: "Шахзод",
+        last_name: "Бахромов",
+        username: "shahzod_capital",
+        language_code: "ru",
+        avatar: "👑"
+      }
+    };
+
+    let currentUser = mockUsers.nodir;
+
+    // INJECT TELEGRAM WEBAPP MOCK INTO IFRAME
+    function injectTelegramSdkMock() {
+      const iframe = document.getElementById('miniAppIframe');
+      try {
+        const frameWin = iframe.contentWindow;
+        if (!frameWin) return;
+
+        frameWin.Telegram = frameWin.Telegram || {};
+        frameWin.Telegram.WebApp = {
+          initData: "user=" + encodeURIComponent(JSON.stringify(currentUser)) + "&auth_date=" + Math.floor(Date.now() / 1000) + "&hash=mock_telegram_signature_valid",
+          initDataUnsafe: {
+            user: currentUser,
+            auth_date: Math.floor(Date.now() / 1000),
+            hash: "mock_telegram_signature_valid"
+          },
+          version: "7.0",
+          platform: "ios",
+          colorScheme: "light",
+          themeParams: {
+            bg_color: "#ffffff",
+            text_color: "#0f172a",
+            hint_color: "#64748b",
+            link_color: "#059669",
+            button_color: "#059669",
+            button_text_color: "#ffffff",
+            secondary_bg_color: "#f8fafc"
+          },
+          isExpanded: true,
+          viewportHeight: 740,
+          viewportStableHeight: 740,
+          headerColor: "#ffffff",
+          backgroundColor: "#f8fafc",
+          ready: function() { console.log("[TG SDK] ready() called"); },
+          expand: function() { console.log("[TG SDK] expand() called"); },
+          close: function() { closeMiniApp(); },
+          openLink: function(url) { window.open(url, '_blank'); },
+          openTelegramLink: function(url) { window.open(url, '_blank'); },
+          HapticFeedback: {
+            impactOccurred: function(style) { console.log("[TG Haptic] impact: " + style); },
+            notificationOccurred: function(type) { console.log("[TG Haptic] notification: " + type); },
+            selectionChanged: function() { console.log("[TG Haptic] selection"); }
+          },
+          MainButton: {
+            text: "CONTINUE",
+            color: "#059669",
+            textColor: "#ffffff",
+            isVisible: false,
+            isActive: true,
+            show: function() { this.isVisible = true; },
+            hide: function() { this.isVisible = false; },
+            onClick: function(cb) { this._cb = cb; }
+          }
+        };
+
+        // Notify iframe code
+        frameWin.dispatchEvent(new Event('telegram-ready'));
+      } catch (err) {
+        console.warn("Could not inject Telegram WebApp mock into iframe (cross-origin or loading):", err);
+      }
+    }
+
+    document.getElementById('miniAppIframe').addEventListener('load', () => {
+      injectTelegramSdkMock();
+    });
+
+    // OPEN / CLOSE MINI APP
+    function openMiniApp() {
+      const sheet = document.getElementById('webAppSheet');
+      sheet.classList.add('open');
+      injectTelegramSdkMock();
+    }
+
+    function closeMiniApp() {
+      const sheet = document.getElementById('webAppSheet');
+      sheet.classList.remove('open');
+    }
+
+    function reloadMiniApp() {
+      const iframe = document.getElementById('miniAppIframe');
+      iframe.src = iframe.src;
+    }
+
+    function changeMockUser(key) {
+      currentUser = mockUsers[key] || mockUsers.nodir;
+      reloadMiniApp();
+      appendBotMessage(`👤 Переключен пользователь: <strong>${currentUser.first_name}</strong> (@${currentUser.username})`);
+    }
+
+    // INTERACTIVE CHAT ENGINE
+    function sendChatMessage() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendUserMessage(text);
+      input.value = '';
+
+      // Processing message with Bot Logic
+      setTimeout(() => {
+        handleBotLogic(text);
+      }, 400);
+    }
+
+    function appendUserMessage(text) {
+      const container = document.getElementById('chatMessages');
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      const msg = document.createElement('div');
+      msg.className = 'msg-bubble user';
+      msg.innerHTML = `${escapeHtml(text)} <span class="msg-time">${timeStr}</span>`;
+      container.appendChild(msg);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function appendBotMessage(htmlContent) {
+      const container = document.getElementById('chatMessages');
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      const msg = document.createElement('div');
+      msg.className = 'msg-bubble bot';
+      msg.innerHTML = `${htmlContent} <span class="msg-time">${timeStr}</span>`;
+      container.appendChild(msg);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function handleBotLogic(text) {
+      const lower = text.toLowerCase();
+
+      if (lower.startsWith('/start')) {
+        const isRef = lower.includes('ref_');
+        let bonusText = isRef ? '<br><br>🎁 <strong>Вам начислен велкам-бонус за регистрацию по ссылке: +150 XP!</strong>' : '';
+        appendBotMessage(`
+          👋 <strong>Ассалому алейкум, ${currentUser.first_name}!</strong><br><br>
+          Рады приветствовать в <strong>OnPul by NIYAT</strong>!${bonusText}<br><br>
+          <button class="tg-inline-btn primary" onclick="openMiniApp()">🚀 Открыть OnPul Mini App</button>
+        `);
+        return;
+      }
+
+      // Regex matching expense
+      const match = lower.match(/([а-яa-z\s]+?)\s*(\d+[\d\s]*)(к|k|млн)?$/);
+      if (match) {
+        const cat = match[1].trim();
+        const digits = parseInt(match[2].replace(/\s+/g, ''), 10);
+        const mult = match[3];
+        let amount = digits;
+        if (mult === 'к' || mult === 'k') amount *= 1000;
+        if (mult === 'млн') amount *= 1000000;
+
+        const isIncome = ['зарплата', 'доход', 'аванс'].some(w => cat.includes(w));
+        const emoji = isIncome ? '💵' : cat.includes('бензин') ? '⛽' : cat.includes('обед') || cat.includes('еда') ? '🍽️' : cat.includes('такси') ? '🚕' : '💳';
+
+        // Async sync with local server API if running
+        fetch('/api/transactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: amount,
+            category: `${emoji} ${cat.charAt(0).toUpperCase() + cat.slice(1)}`,
+            user_id: currentUser.id
+          })
+        }).catch(() => {});
+
+        appendBotMessage(`
+          ✅ <strong>${isIncome ? 'Доход' : 'Расход'} успешно учтен в OnPul!</strong><br>
+          ${emoji} <strong>${cat.charAt(0).toUpperCase() + cat.slice(1)}:</strong> <code>${amount.toLocaleString()} UZS</code><br>
+          ⚡ <strong>+10 XP начислено!</strong> Прогресс обновлен.<br><br>
+          <button class="tg-inline-btn primary" style="width: 100%; font-size: 12px; padding: 6px 10px;" onclick="openMiniApp()">
+            📊 Посмотреть в приложении
+          </button>
+        `);
+      } else {
+        appendBotMessage(`
+          ℹ️ Чтобы записать расход, напишите категорию и сумму.<br>
+          Например: <code>бензин 180000</code> или <code>обед 45к</code>.<br><br>
+          Либо запустите полное приложение:
+          <button class="tg-inline-btn primary" style="margin-top: 6px;" onclick="openMiniApp()">📱 Открыть OnPul</button>
+        `);
+      }
+    }
+
+    function sendSampleExpense(txt) {
+      document.getElementById('chatInput').value = txt;
+      sendChatMessage();
+    }
+
+    function sendRefStart() {
+      document.getElementById('chatInput').value = '/start ref_nodir77';
+      sendChatMessage();
+    }
+
+    function simulateBotShare() {
+      alert("📋 Ссылка для приглашения скопирована!\nhttps://t.me/onpul_bot?start=ref_" + currentUser.username);
+    }
+
+    function escapeHtml(string) {
+      return String(string).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // LIVE CLOCK IN STATUS BAR
+    function updateClock() {
+      const now = new Date();
+      const h = now.getHours().toString().padStart(2, '0');
+      const m = now.getMinutes().toString().padStart(2, '0');
+      document.getElementById('liveClock').textContent = `${h}:${m}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // SERVER HEARTBEAT CHECK
+    function checkServerHealth() {
+      fetch('/api/health')
+        .then(r => r.json())
+        .then(data => {
+          document.getElementById('serverDot').style.background = '#10b981';
+          document.getElementById('serverStatusText').textContent = `Сервер активен (Port ${data.port || 8080})`;
+        })
+        .catch(() => {
+          // If on file:// or server not started yet
+          document.getElementById('serverDot').style.background = '#f59e0b';
+          document.getElementById('serverStatusText').textContent = 'Автономный режим (запустите start_emulator.bat)';
+        });
+    }
+    checkServerHealth();
+    setInterval(checkServerHealth, 10000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --tg-theme-bg-color: #ffffff;
+  --tg-theme-text-color: #0f172a;
+  --tg-theme-hint-color: #64748b;
+  --tg-theme-link-color: #059669;
+  --tg-theme-button-color: #059669;
+  --tg-theme-button-text-color: #ffffff;
+  --tg-theme-secondary-bg-color: #f8fafc;
+}
+
+/* Telegram Dark Mode overrides when present */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tg-theme-bg-color: #0f172a;
+    --tg-theme-text-color: #f8fafc;
+    --tg-theme-hint-color: #94a3b8;
+    --tg-theme-link-color: #10b981;
+    --tg-theme-button-color: #059669;
+    --tg-theme-button-text-color: #ffffff;
+    --tg-theme-secondary-bg-color: #1e293b;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  background-color: var(--tg-theme-bg-color, #ffffff);
+  color: var(--tg-theme-text-color, #0f172a);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Smooth custom animations */
+@keyframes floatUp {
+  0% { opacity: 0; transform: translateY(12px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-float-up {
+  animation: floatUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.04); opacity: 0.85; }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s infinite ease-in-out;
+}
