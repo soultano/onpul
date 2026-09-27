@@ -15,13 +15,14 @@ build/
 **/.env.*
 !**/.env.example
 
-# Databases
+# Databases & Runtime Emulator Data
 *.db
 *.db-journal
 *.sqlite
 *.sqlite3
 **/dev.db
 **/dev.db-journal
+data/
 
 # Python & Logs
 __pycache__/
