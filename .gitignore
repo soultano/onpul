@@ -2,10 +2,14 @@
 node_modules/
 **/node_modules/
 
-# Build outputs
+# Build outputs & E2E artifacts
 dist/
 **/dist/
 build/
+/test-results/
+/playwright-report/
+**/test-results/
+**/playwright-report/
 
 # Environment & Secrets
 .env
