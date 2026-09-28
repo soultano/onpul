@@ -23,7 +23,8 @@ export function buildRankedLeaderboard(
   playerGender: CharacterGender,
   playerCity: string,
   playerXp: number,
-  playerStreak: number
+  playerStreak: number,
+  playerArenaTrophies = 0
 ): { list: RankedPlayer[]; playerEntry: RankedPlayer } {
   const currentUserEntry: LeaderboardCompetitor = {
     id: 'current-player',
@@ -32,12 +33,17 @@ export function buildRankedLeaderboard(
     gender: playerGender,
     xp: playerXp,
     streak: playerStreak,
+    arenaTrophies: playerArenaTrophies,
     isCurrentUser: true,
   };
 
   const all = [...INITIAL_LEADERBOARD_RIVALS, currentUserEntry].map((entry) => {
     const lvlInfo = calculateLevelAndProgress(entry.xp);
-    const rp = calculateReputationPoints(entry.xp, entry.streak);
+    const rp = calculateReputationPoints(
+      entry.xp,
+      entry.streak,
+      entry.arenaTrophies || 0
+    );
     return {
       ...entry,
       level: lvlInfo.level,
@@ -68,6 +74,7 @@ interface LeaderboardModalProps {
   playerCity: string;
   playerXp: number;
   playerStreak: number;
+  playerArenaTrophies?: number;
 }
 
 export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
@@ -78,6 +85,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
   playerCity,
   playerXp,
   playerStreak,
+  playerArenaTrophies = 0,
 }) => {
   const { haptics } = useTelegram();
 
@@ -88,7 +96,8 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
     playerGender,
     playerCity,
     playerXp,
-    playerStreak
+    playerStreak,
+    playerArenaTrophies
   );
 
   const first = list[0];
@@ -103,19 +112,19 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden max-h-[85vh] flex flex-col"
+        className="w-full max-w-md bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden max-h-[88vh] flex flex-col"
       >
         {/* Шапка */}
-        <div className="bg-gradient-to-r from-amber-50 via-emerald-50 to-sky-50 px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-amber-50 via-emerald-50 to-sky-50 px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
           <div>
             <div className="inline-flex items-center gap-1 text-[11px] font-extrabold text-amber-700 bg-amber-100/80 px-2.5 py-0.5 rounded-full mb-1">
-              <span>🏆 Лидерборд Узбекистана</span>
+              <span>🏆 Лидерборд Узбекистана • Призовая Лига</span>
             </div>
             <h2 className="text-lg font-black text-slate-900">
               Топ самых осознанных
             </h2>
             <p className="text-[11px] text-slate-600">
-              Формула рейтинга: RP = XP + (Ударные дни × 15)
+              Формула: RP = XP + (Ударные дни × 15) + 🏆 Кубки Блица
             </p>
           </div>
           <button
@@ -129,6 +138,30 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
           >
             ✕
           </button>
+        </div>
+
+        {/* БЛОК ПРИЗОВОГО ПУЛА НЕДЕЛИ (ТОП-1, ТОП-2, ТОП-3) */}
+        <div
+          data-testid="leaderboard-prize-pool"
+          className="px-4 py-2.5 bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-sky-500/10 border-b border-amber-200/80"
+        >
+          <div className="text-[11px] font-black text-slate-900 mb-1 flex items-center justify-between">
+            <span>🎁 Призовой Пул Недели (Топ-1, Топ-2, Топ-3):</span>
+            <span className="text-[10px] font-extrabold text-amber-700">
+              Финал в ВС 21:00
+            </span>
+          </div>
+          <div className="space-y-0.5 text-[10px] font-bold text-slate-700">
+            <div>
+              🥇 <strong className="text-slate-900">1 место:</strong> 50 💎 NZT + 10 000 💰 + Статус PRO и Купон +2%
+            </div>
+            <div>
+              🥈 <strong className="text-slate-900">2 место:</strong> 30 💎 NZT + 5 000 💰 + VIP-Аура
+            </div>
+            <div>
+              🥉 <strong className="text-slate-900">3 место:</strong> 15 💎 NZT + 2 500 💰 + Крио-Щит
+            </div>
+          </div>
         </div>
 
         {/* Пьедестал Почёта: 1, 2, 3 место */}
@@ -286,7 +319,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
                     {item.rp} RP
                   </div>
                   <div className="text-[10px] font-semibold text-slate-500">
-                    {item.xp} XP • 🔥{item.streak} дн.
+                    {item.xp} XP • 🔥{item.streak} • 🏆{item.arenaTrophies || 0}
                   </div>
                 </div>
               </div>

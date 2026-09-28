@@ -20,6 +20,9 @@ interface MainCharacterScreenProps {
   onOpenPaydayModal: () => void;
   onOpenFriendsModal: () => void;
   onOpenNztLab: () => void;
+  onOpenBlitzModal: () => void;
+  onClaimVault: () => void;
+  onOpenVaultShop: () => void;
   onNavigateKyc: () => void;
   onNavigateFinance: () => void;
   onRestartTutorial: () => void;
@@ -34,6 +37,9 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
   onOpenPaydayModal,
   onOpenFriendsModal,
   onOpenNztLab,
+  onOpenBlitzModal,
+  onClaimVault,
+  onOpenVaultShop,
   onNavigateKyc,
   onNavigateFinance,
   onRestartTutorial,
@@ -51,7 +57,8 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
     state.gender,
     state.profileQuests.kycCity,
     state.xp,
-    state.streak
+    state.streak,
+    state.arenaTrophies
   );
 
   const top1 = leaderboardList[0];
@@ -377,7 +384,119 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
         </div>
       </div>
 
-      {/* 4. ПЛАШКА ГЛАВНОЙ ПОЛЕЗНОСТИ: «СКОЛЬКО ДОСТУПНО ДО ЗАРПЛАТЫ» */}
+      {/* 4A. КАРТОЧКА «⚔️ НЕЙРО-БЛИЦ: ДУЭЛЬ ДНЯ» (ЕЖЕДНЕВНОЕ СОРЕВНОВАНИЕ ЗА 30 СЕК) */}
+      <div
+        data-testid="daily-blitz-banner"
+        className="bg-gradient-to-r from-amber-50 via-orange-50/80 to-rose-50 rounded-3xl p-3.5 border-2 border-amber-400/90 shadow-soft"
+      >
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-base shrink-0">⚔️</span>
+            <div className="min-w-0">
+              <div className="text-xs font-black text-slate-900 truncate">
+                Нейро-Блиц: Дуэль Дня (PvP)
+              </div>
+              <div className="text-[11px] font-bold text-slate-700 truncate">
+                ⚔️ Соперник дня: Сардор ({state.rivalTrophies} 🏆) • Твои кубки:{' '}
+                <strong className="text-amber-700">{state.arenaTrophies} 🏆</strong>
+              </div>
+            </div>
+          </div>
+
+          {state.arenaTrophies >= state.rivalTrophies ? (
+            <span className="bg-emerald-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full shrink-0">
+              🏆 Соперник дня повержен!
+            </span>
+          ) : (
+            <span className="bg-amber-200/80 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full shrink-0">
+              Разрыв: {state.rivalTrophies - state.arenaTrophies} 🏆
+            </span>
+          )}
+        </div>
+
+        <button
+          type="button"
+          data-testid="open-blitz-btn"
+          onClick={() => {
+            haptics.selection();
+            onOpenBlitzModal();
+          }}
+          className="w-full py-2.5 px-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white font-black text-xs shadow-md flex items-center justify-between transition-all active:scale-[0.99]"
+        >
+          <span>⚡ Играть Блиц (Сделка или Ловушка)</span>
+          <span className="bg-white/20 px-2 py-0.5 rounded-full text-[10px]">
+            +30 🏆 • +200 💰
+          </span>
+        </button>
+      </div>
+
+      {/* 4B. КАРТОЧКА «💰 НЕЙРО-СЕЙФ ДИВИДЕНДОВ И ЗАРАБОТОК (EARN & UPGRADE)» */}
+      <div
+        data-testid="neuro-vault-widget"
+        className="bg-white rounded-3xl p-3.5 border-2 border-emerald-500/80 shadow-soft"
+      >
+        <div className="flex items-center justify-between gap-2 mb-2.5">
+          <div className="flex items-center gap-1.5">
+            <span className="text-base">💰</span>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-black text-slate-900">
+                  💰 Сейф Ур. {state.vaultLevel}/10
+                </span>
+                {state.proPassActive && (
+                  <span className="bg-amber-400 text-slate-950 text-[9px] font-black px-2 py-0.5 rounded-full">
+                    PRO ×2
+                  </span>
+                )}
+              </div>
+              <div className="text-[11px] font-bold text-emerald-700">
+                В сейфе: +{state.vaultPendingCoins} 💰 (дивиденды за 24ч)
+              </div>
+            </div>
+          </div>
+
+          <div
+            data-testid="hud-onpul-coins"
+            className="bg-amber-50 border border-amber-300 text-amber-900 text-xs font-black px-2.5 py-1 rounded-full shrink-0"
+          >
+            {state.onpulCoins} 💰 Coins
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            data-testid="claim-vault-btn"
+            onClick={() => {
+              haptics.notification('success');
+              onClaimVault();
+            }}
+            className={`py-2.5 px-3 rounded-2xl font-black text-xs transition-all ${
+              state.vaultPendingCoins > 0
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
+                : 'bg-emerald-100 text-emerald-800'
+            }`}
+          >
+            {state.vaultPendingCoins > 0
+              ? `Забрать +${state.vaultPendingCoins} 💰 (+20 XP)`
+              : '✓ Дивиденды собраны (+20 XP)'}
+          </button>
+
+          <button
+            type="button"
+            data-testid="open-vault-shop-btn"
+            onClick={() => {
+              haptics.selection();
+              onOpenVaultShop();
+            }}
+            className="py-2.5 px-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-sm transition-all"
+          >
+            🚀 Улучшить / Награды & PRO
+          </button>
+        </div>
+      </div>
+
+      {/* 5. ПЛАШКА ГЛАВНОЙ ПОЛЕЗНОСТИ: «СКОЛЬКО ДОСТУПНО ДО ЗАРПЛАТЫ» */}
       <div
         data-testid="safe-limit-banner"
         onClick={() => {

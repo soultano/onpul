@@ -67,7 +67,11 @@ export const SettingsAndKycScreen: React.FC<SettingsAndKycScreenProps> = ({
   );
 
   const profile = CHARACTER_PROFILES[state.gender];
-  const rp = calculateReputationPoints(state.xp, state.streak);
+  const rp = calculateReputationPoints(
+    state.xp,
+    state.streak,
+    state.arenaTrophies
+  );
 
   const completedQuestsCount = [
     state.profileQuests.usernameClaimed,

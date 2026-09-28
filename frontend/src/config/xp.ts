@@ -131,10 +131,18 @@ export function calculateLevelAndProgress(totalXp: number): LevelInfo {
 }
 
 /**
- * Формула очков репутации для Лидерборда: RP = XP_total + (Streak * 15)
+ * Формула очков репутации для Лидерборда: RP = XP_total + (Streak * 15) + arenaTrophies
  */
-export function calculateReputationPoints(totalXp: number, streak: number): number {
-  return Math.max(0, Math.floor(totalXp)) + Math.max(0, Math.floor(streak)) * 15;
+export function calculateReputationPoints(
+  totalXp: number,
+  streak: number,
+  arenaTrophies = 0
+): number {
+  return (
+    Math.max(0, Math.floor(totalXp)) +
+    Math.max(0, Math.floor(streak)) * 15 +
+    Math.max(0, Math.floor(arenaTrophies))
+  );
 }
 
 export const LIMITLESS_XP_REWARDS = {

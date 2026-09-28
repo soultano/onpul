@@ -25,6 +25,8 @@ import {
   NztLabModal,
   PaydayModal,
 } from './components/Modals/QuickActionModals';
+import { NeuroBlitzModal } from './components/Modals/NeuroBlitzModal';
+import { VaultAndMonetizationModal } from './components/Modals/VaultAndMonetizationModal';
 import { LevelUpModal } from './components/LevelUpModal';
 
 function loadInitialState(
@@ -51,6 +53,30 @@ function loadInitialState(
           streakShieldActive: Boolean(parsed.streakShieldActive),
           vipAuraUnlocked: Boolean(parsed.vipAuraUnlocked),
           referralWelcomeClaimed: Boolean(parsed.referralWelcomeClaimed),
+          onpulCoins:
+            typeof parsed.onpulCoins === 'number' ? parsed.onpulCoins : 400,
+          vaultLevel:
+            typeof parsed.vaultLevel === 'number' ? parsed.vaultLevel : 1,
+          vaultPendingCoins:
+            typeof parsed.vaultPendingCoins === 'number'
+              ? parsed.vaultPendingCoins
+              : 250,
+          arenaTrophies:
+            typeof parsed.arenaTrophies === 'number'
+              ? parsed.arenaTrophies
+              : 120,
+          rivalTrophies:
+            typeof parsed.rivalTrophies === 'number'
+              ? parsed.rivalTrophies
+              : 145,
+          blitzCardsPlayedToday:
+            typeof parsed.blitzCardsPlayedToday === 'number'
+              ? parsed.blitzCardsPlayedToday
+              : 0,
+          proPassActive: Boolean(parsed.proPassActive),
+          raffleTickets:
+            typeof parsed.raffleTickets === 'number' ? parsed.raffleTickets : 0,
+          niyatBoostRedeemed: Boolean(parsed.niyatBoostRedeemed),
           profileQuests: {
             ...base.profileQuests,
             ...(parsed.profileQuests || {}),
@@ -77,12 +103,14 @@ export function App() {
   // Пошаговый гид со стрелками (5 шагов)
   const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(false);
 
-  // Модальные окна кругляшков, лидерборда и Лаборатории NZT
+  // Модальные окна кругляшков, лидерборда, Блица, Сейфа и Лаборатории NZT
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState<boolean>(false);
   const [isPaydayModalOpen, setIsPaydayModalOpen] = useState<boolean>(false);
   const [isGoalsModalOpen, setIsGoalsModalOpen] = useState<boolean>(false);
   const [isFriendsModalOpen, setIsFriendsModalOpen] = useState<boolean>(false);
   const [isNztLabOpen, setIsNztLabOpen] = useState<boolean>(false);
+  const [isBlitzModalOpen, setIsBlitzModalOpen] = useState<boolean>(false);
+  const [isVaultShopOpen, setIsVaultShopOpen] = useState<boolean>(false);
 
   // Тост XP и Модалка Level Up
   const [toastXp, setToastXp] = useState<number | null>(null);
@@ -431,6 +459,115 @@ export function App() {
     }));
   };
 
+  // 9b. Нейро-Блиц (Ежедневная PvP-дуэль): верный ход Сверхчеловека (+30 XP, +30 🏆, +200 💰, +1 💎 NZT при победе над соперником) или урок (+10 XP)
+  const handlePlayBlitzCard = (isSuperhumanMove: boolean) => {
+    if (isSuperhumanMove) {
+      updateStateWithXp(
+        30,
+        (prev) => {
+          const nextTrophies = prev.arenaTrophies + 30;
+          const justDefeatedRival =
+            prev.arenaTrophies < prev.rivalTrophies &&
+            nextTrophies >= prev.rivalTrophies;
+          return {
+            ...prev,
+            arenaTrophies: nextTrophies,
+            onpulCoins: prev.onpulCoins + 200,
+            nztGems: prev.nztGems + (justDefeatedRival ? 1 : 0),
+            blitzCardsPlayedToday: prev.blitzCardsPlayedToday + 1,
+          };
+        },
+        true
+      );
+    } else {
+      updateStateWithXp(
+        10,
+        (prev) => ({
+          ...prev,
+          blitzCardsPlayedToday: prev.blitzCardsPlayedToday + 1,
+        }),
+        true
+      );
+    }
+  };
+
+  // 9c. Сбор накопленных дивидендов из Нейро-Сейфа (+20 XP и перевод монет на баланс)
+  const handleClaimVault = () => {
+    updateStateWithXp(
+      20,
+      (prev) => {
+        const claimed = prev.vaultPendingCoins > 0 ? prev.vaultPendingCoins : 0;
+        return {
+          ...prev,
+          onpulCoins: prev.onpulCoins + claimed,
+          vaultPendingCoins: 0,
+        };
+      },
+      true
+    );
+  };
+
+  // 9d. Апгрейд уровня Нейро-Сейфа (300 💰 Coins → Ур. +1, новые монеты в сейф и +40 XP)
+  const handleUpgradeVault = () => {
+    updateStateWithXp(
+      40,
+      (prev) => ({
+        ...prev,
+        onpulCoins: Math.max(0, prev.onpulCoins - 300),
+        vaultLevel: Math.min(10, prev.vaultLevel + 1),
+        vaultPendingCoins: prev.vaultPendingCoins + 150,
+      }),
+      true
+    );
+  };
+
+  // 9e. Обменник выгод: Промо-Буст +2% Niyat Application (200 💰 Coins → промокод ONPUL-NIYAT-38 и +50 XP)
+  const handleRedeemNiyatBoost = () => {
+    const xpReward = gameState.niyatBoostRedeemed ? 0 : 50;
+    updateStateWithXp(
+      xpReward,
+      (prev) => ({
+        ...prev,
+        onpulCoins: prev.niyatBoostRedeemed
+          ? prev.onpulCoins
+          : Math.max(0, prev.onpulCoins - 200),
+        niyatBoostRedeemed: true,
+      }),
+      true
+    );
+  };
+
+  // 9f. Обменник выгод: Билет Еженедельного Розыгрыша (150 💰 Coins → +1 🎟️ и +30 XP)
+  const handleRedeemRaffleTicket = () => {
+    updateStateWithXp(
+      30,
+      (prev) => ({
+        ...prev,
+        onpulCoins: Math.max(0, prev.onpulCoins - 150),
+        raffleTickets: prev.raffleTickets + 1,
+      }),
+      true
+    );
+  };
+
+  // 9g. PRO-Монетизация: Активация подписки «NZT Pass (Сверхчеловек PRO)» (+100 XP, +2 💎 NZT, +500 💰 Coins)
+  const handleActivateProPass = () => {
+    const xpReward = gameState.proPassActive ? 0 : 100;
+    updateStateWithXp(
+      xpReward,
+      (prev) => ({
+        ...prev,
+        proPassActive: true,
+        xpMultiplier: 2,
+        streakShieldActive: true,
+        vipAuraUnlocked: true,
+        nztGems: prev.proPassActive ? prev.nztGems : prev.nztGems + 2,
+        onpulCoins: prev.proPassActive ? prev.onpulCoins : prev.onpulCoins + 500,
+      }),
+      true
+    );
+  };
+
   // 10. Переключение пола персонажа в 1 клик
   const handleSwitchGender = () => {
     setGameState((prev) => {
@@ -466,6 +603,8 @@ export function App() {
     setIsGoalsModalOpen(false);
     setIsFriendsModalOpen(false);
     setIsNztLabOpen(false);
+    setIsBlitzModalOpen(false);
+    setIsVaultShopOpen(false);
   };
 
   const currentLang = gameState.language || 'ru';
@@ -518,6 +657,9 @@ export function App() {
             onOpenPaydayModal={() => setIsPaydayModalOpen(true)}
             onOpenFriendsModal={() => setIsFriendsModalOpen(true)}
             onOpenNztLab={() => setIsNztLabOpen(true)}
+            onOpenBlitzModal={() => setIsBlitzModalOpen(true)}
+            onClaimVault={handleClaimVault}
+            onOpenVaultShop={() => setIsVaultShopOpen(true)}
             onNavigateKyc={() => setCurrentTab('settings')}
             onNavigateFinance={() => setCurrentTab('finance')}
             onRestartTutorial={() => setIsTutorialOpen(true)}
@@ -633,7 +775,7 @@ export function App() {
         onSkip={handleTutorialSkip}
       />
 
-      {/* МОДАЛКА ЛИДЕРБОРДА (ТОП 1-2-3 МЕСТО) */}
+      {/* МОДАЛКА ЛИДЕРБОРДА (ТОП 1-2-3 МЕСТО + ПРИЗОВОЙ ПУЛ НЕДЕЛИ) */}
       <LeaderboardModal
         isOpen={isLeaderboardOpen}
         onClose={() => setIsLeaderboardOpen(false)}
@@ -642,6 +784,7 @@ export function App() {
         playerCity={gameState.profileQuests.kycCity}
         playerXp={gameState.xp}
         playerStreak={gameState.streak}
+        playerArenaTrophies={gameState.arenaTrophies}
       />
 
       {/* МОДАЛКА КАЛЬКУЛЯТОРА «ДОСТУПНО ДО ЗАРПЛАТЫ» */}
@@ -679,6 +822,25 @@ export function App() {
         onBuyNeuroBoost={handleBuyNeuroBoost}
         onBuyStreakShield={handleBuyStreakShield}
         onBuyVipAura={handleBuyVipAura}
+      />
+
+      {/* МОДАЛКА «⚡ НЕЙРО-БЛИЦ: СДЕЛКА ИЛИ ЛОВУШКА?» (ЕЖЕДНЕВНОЕ СОРЕВНОВАНИЕ) */}
+      <NeuroBlitzModal
+        isOpen={isBlitzModalOpen}
+        onClose={() => setIsBlitzModalOpen(false)}
+        state={gameState}
+        onPlayBlitzCard={handlePlayBlitzCard}
+      />
+
+      {/* МОДАЛКА «💰 НЕЙРО-СЕЙФ, ВЫГОДЫ И PRO-МОНЕТИЗАЦИЯ» */}
+      <VaultAndMonetizationModal
+        isOpen={isVaultShopOpen}
+        onClose={() => setIsVaultShopOpen(false)}
+        state={gameState}
+        onUpgradeVault={handleUpgradeVault}
+        onRedeemNiyatBoost={handleRedeemNiyatBoost}
+        onRedeemRaffleTicket={handleRedeemRaffleTicket}
+        onActivateProPass={handleActivateProPass}
       />
 
       {/* МОДАЛКА / БАННЕР ПОВЫШЕНИЯ УРОВНЯ (LEVEL UP!) */}

@@ -47,6 +47,15 @@ export interface LimitlessGameState {
   streakShieldActive: boolean; // Крио-Щит Стрика
   vipAuraUnlocked: boolean; // Золотая VIP-Аура
   referralWelcomeClaimed: boolean; // Получен ли бонус приглашённого друга (+100 XP + 1 NZT)
+  onpulCoins: number; // 💰 OnPul Coins — Капитал Сейфа и наград
+  vaultLevel: number; // Уровень Нейро-Сейфа (1..10)
+  vaultPendingCoins: number; // Накопленные за сутки дивиденды в Сейфе, готовые к сбору
+  arenaTrophies: number; // 🏆 Кубки Лиги / Арены игрока
+  rivalTrophies: number; // 🏆 Кубки Соперника Дня (Сардор)
+  blitzCardsPlayedToday: number; // Сыграно карт Нейро-Блица сегодня
+  proPassActive: boolean; // 👑 Активен ли статус NZT Pass (Сверхчеловек PRO)
+  raffleTickets: number; // 🎟️ Билеты еженедельного призового розыгрыша
+  niyatBoostRedeemed: boolean; // Активирован ли промо-буст +2% Niyat Application
   tutorialCompleted: boolean;
   tutorialRewardClaimed: boolean;
   balance: number; // Текущий баланс на картах/наличными (сум)
@@ -76,6 +85,15 @@ export function createInitialGameState(
     streakShieldActive: false,
     vipAuraUnlocked: false,
     referralWelcomeClaimed: false,
+    onpulCoins: 400,
+    vaultLevel: 1,
+    vaultPendingCoins: 250,
+    arenaTrophies: 120,
+    rivalTrophies: 145,
+    blitzCardsPlayedToday: 0,
+    proPassActive: false,
+    raffleTickets: 0,
+    niyatBoostRedeemed: false,
     tutorialCompleted: false,
     tutorialRewardClaimed: false,
     balance: 4500000,
