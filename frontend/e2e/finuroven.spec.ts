@@ -660,11 +660,22 @@ test.describe('OnPul «ФинУровень» (Limitless Edition) — Компл
   test('Тест 7: Автоопределение языка по локали браузера/системы и приоритетный фоллбэк на узбекский язык uz', async ({
     browser,
   }) => {
+    const mockApi = async (ctx: Awaited<ReturnType<typeof browser.newContext>>) => {
+      await ctx.route('**/api/**', async (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ ok: true }),
+        })
+      );
+    };
+
     // 1. Локаль ko-KR -> игра автоматически выбирает корейский язык (ko)
     const koContext = await browser.newContext({
       viewport: { width: 390, height: 844 },
       locale: 'ko-KR',
     });
+    await mockApi(koContext);
     const koPage = await koContext.newPage();
     await koPage.goto('/');
     await expect(koPage.getByTestId('character-select-screen')).toHaveAttribute(
@@ -685,6 +696,7 @@ test.describe('OnPul «ФинУровень» (Limitless Edition) — Компл
       viewport: { width: 390, height: 844 },
       locale: 'de-DE',
     });
+    await mockApi(deContext);
     const dePage = await deContext.newPage();
     await dePage.goto('/');
     await expect(dePage.getByTestId('character-select-screen')).toHaveAttribute(
@@ -704,11 +716,12 @@ test.describe('OnPul «ФинУровень» (Limitless Edition) — Компл
     );
     await deContext.close();
 
-    // 3. Неподдерживаемая локаль (fr-FR / tr-TR) -> приоритетный фоллбэк на узбекский язык (uz)
+    // 3. Неподдерживаемая локаль (fr-FR и tr-TR) -> приоритетный фоллбэк на узбекский язык (uz)
     const fallbackContext = await browser.newContext({
       viewport: { width: 390, height: 844 },
       locale: 'fr-FR',
     });
+    await mockApi(fallbackContext);
     const uzFallbackPage = await fallbackContext.newPage();
     await uzFallbackPage.goto('/');
     await expect(
@@ -732,11 +745,27 @@ test.describe('OnPul «ФинУровень» (Limitless Edition) — Компл
     );
     await fallbackContext.close();
 
+    const trFallbackContext = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      locale: 'tr-TR',
+    });
+    await mockApi(trFallbackContext);
+    const trFallbackPage = await trFallbackContext.newPage();
+    await trFallbackPage.goto('/');
+    await expect(
+      trFallbackPage.getByTestId('character-select-screen')
+    ).toHaveAttribute('data-active-lang', 'uz');
+    await expect(trFallbackPage.getByTestId('active-language-code')).toHaveText(
+      'uz'
+    );
+    await trFallbackContext.close();
+
     // 4. Локаль ru-RU -> игра автоматически открывается на русском языке (ru)
     const ruContext = await browser.newContext({
       viewport: { width: 390, height: 844 },
       locale: 'ru-RU',
     });
+    await mockApi(ruContext);
     const ruPage = await ruContext.newPage();
     await ruPage.goto('/');
     await expect(ruPage.getByTestId('character-select-screen')).toHaveAttribute(
