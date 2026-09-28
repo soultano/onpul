@@ -11,7 +11,11 @@ import {
   STORAGE_KEY,
   createInitialGameState,
 } from './types/game';
-import { SupportedLanguage, TRANSLATIONS } from './i18n/translations';
+import {
+  SupportedLanguage,
+  TRANSLATIONS,
+  detectDefaultLanguage,
+} from './i18n/translations';
 import { CHARACTER_PROFILES } from './data/limitlessContent';
 import { CharacterSelectScreen } from './components/Onboarding/CharacterSelectScreen';
 import { ArrowTutorialOverlay } from './components/Tutorial/ArrowTutorialOverlay';
@@ -46,7 +50,7 @@ function loadInitialState(
         return {
           ...base,
           ...parsed,
-          language: parsed.language || 'ru',
+          language: parsed.language || detectDefaultLanguage(),
           nztGems: typeof parsed.nztGems === 'number' ? parsed.nztGems : 0,
           xpMultiplier:
             typeof parsed.xpMultiplier === 'number' ? parsed.xpMultiplier : 1,
@@ -703,7 +707,7 @@ export function App() {
     setIsVaultShopOpen(false);
   };
 
-  const currentLang = gameState.language || 'ru';
+  const currentLang = gameState.language || detectDefaultLanguage();
   const t = TRANSLATIONS[currentLang];
 
   // Если персонаж ещё не выбран — показываем стартовый экран выбора героя
@@ -721,7 +725,10 @@ export function App() {
   const levelInfo = calculateLevelAndProgress(gameState.xp);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 max-w-md mx-auto relative flex flex-col justify-between">
+    <div
+      data-active-lang={currentLang}
+      className="min-h-screen bg-slate-50 text-slate-900 max-w-md mx-auto relative flex flex-col justify-between"
+    >
       {/* ВСПЛЫВАЮЩИЙ БЕЙДЖ НАЧИСЛЕНИЯ ОПЫТА (+XX XP ⚡) */}
       {toastXp !== null && (
         <div

@@ -1,4 +1,121 @@
-export type SupportedLanguage = 'ru' | 'uz' | 'en' | 'de' | 'ko' | 'es';
+export type SupportedLanguage = 'uz' | 'ru' | 'en' | 'de' | 'ko' | 'es';
+
+export const SUPPORTED_LANGUAGE_CODES: readonly SupportedLanguage[] = [
+  'uz',
+  'ru',
+  'en',
+  'de',
+  'ko',
+  'es',
+];
+
+/**
+ * Автоопределение языка пользователя при первом запуске игры:
+ * 1. Telegram WebApp initDataUnsafe.user.language_code
+ * 2. Языки браузера / системы (navigator.languages и navigator.language)
+ * 3. Системная локаль Intl.DateTimeFormat().resolvedOptions().locale
+ * Если ни один кандидат не совпал с 6 языками ('uz' | 'ru' | 'en' | 'de' | 'ko' | 'es'),
+ * приоритетно возвращает узбекский язык ('uz').
+ */
+export function detectDefaultLanguage(
+  customLocales?: readonly string[]
+): SupportedLanguage {
+  const isSupported = (code: string): code is SupportedLanguage =>
+    (SUPPORTED_LANGUAGE_CODES as readonly string[]).includes(code);
+
+  if (customLocales !== undefined) {
+    for (const raw of customLocales) {
+      if (typeof raw === 'string' && raw.trim().length >= 2) {
+        const prefix = raw.trim().slice(0, 2).toLowerCase();
+        if (isSupported(prefix)) {
+          return prefix;
+        }
+      }
+    }
+    return 'uz';
+  }
+
+  if (typeof window !== 'undefined') {
+    // 1. Telegram WebApp user.language_code
+    try {
+      const tgLang = (
+        window as unknown as {
+          Telegram?: {
+            WebApp?: {
+              initDataUnsafe?: {
+                user?: {
+                  language_code?: string;
+                };
+              };
+            };
+          };
+        }
+      ).Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
+
+      if (typeof tgLang === 'string' && tgLang.trim().length >= 2) {
+        const prefix = tgLang.trim().slice(0, 2).toLowerCase();
+        return isSupported(prefix) ? prefix : 'uz';
+      }
+    } catch (e) {}
+
+    // 2. Настройки языка браузера (navigator.languages / navigator.language)
+    try {
+      if (typeof navigator !== 'undefined') {
+        const hasOwnLang = Object.prototype.hasOwnProperty.call(
+          navigator,
+          'language'
+        );
+        const hasOwnLangs = Object.prototype.hasOwnProperty.call(
+          navigator,
+          'languages'
+        );
+
+        const browserCandidates: string[] = [];
+        if (hasOwnLang && !hasOwnLangs && typeof navigator.language === 'string') {
+          browserCandidates.push(navigator.language);
+        } else if (hasOwnLangs && !hasOwnLang && Array.isArray(navigator.languages)) {
+          browserCandidates.push(...navigator.languages);
+        } else {
+          if (Array.isArray(navigator.languages) && navigator.languages.length > 0) {
+            browserCandidates.push(...navigator.languages);
+          }
+          if (typeof navigator.language === 'string' && navigator.language.trim().length > 0) {
+            browserCandidates.push(navigator.language);
+          }
+        }
+
+        const validBrowserCandidates = browserCandidates.filter(
+          (c) => typeof c === 'string' && c.trim().length >= 2
+        );
+
+        if (validBrowserCandidates.length > 0) {
+          for (const raw of validBrowserCandidates) {
+            const prefix = raw.trim().slice(0, 2).toLowerCase();
+            if (isSupported(prefix)) {
+              return prefix;
+            }
+          }
+          // Если локаль браузера не входит в список поддерживаемых (например fr-FR, tr-TR, zh-CN) —
+          // приоритетно открываем игру на узбекском языке ('uz')
+          return 'uz';
+        }
+      }
+    } catch (e) {}
+
+    // 3. Системная локаль устройства (Intl)
+    try {
+      const intlLocale = Intl.DateTimeFormat().resolvedOptions().locale;
+      if (typeof intlLocale === 'string' && intlLocale.trim().length >= 2) {
+        const prefix = intlLocale.trim().slice(0, 2).toLowerCase();
+        if (isSupported(prefix)) {
+          return prefix;
+        }
+      }
+    } catch (e) {}
+  }
+
+  return 'uz';
+}
 
 export interface LanguageOption {
   code: SupportedLanguage;
@@ -217,6 +334,26 @@ export const GOAL_CATEGORY_PRESETS: GoalCategoryPreset[] = [
 ];
 
 export interface TranslationDictionary {
+  onboardingBadge: string;
+  onboardingTitle: string;
+  onboardingSubtitle: string;
+  maleRoleLabel: string;
+  femaleRoleLabel: string;
+  maleName: string;
+  femaleName: string;
+  maleSuperpowerBadge: string;
+  femaleSuperpowerBadge: string;
+  maleSuperpowerShort: string;
+  femaleSuperpowerShort: string;
+  maleArchetype: string;
+  femaleArchetype: string;
+  maleDescription: string;
+  femaleDescription: string;
+  selectedHeroBtn: string;
+  selectHeroBtn: string;
+  heroNameLabel: string;
+  heroNamePlaceholder: string;
+  startGameBtn: string;
   navFinance: string;
   navCharacter: string;
   navSettings: string;
@@ -256,6 +393,29 @@ export interface TranslationDictionary {
 
 export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
   ru: {
+    onboardingBadge: 'OnPul: ФинУровень • Limitless Edition',
+    onboardingTitle: 'Выбери своего героя ясности',
+    onboardingSubtitle:
+      'За 2 минуты в день разгоняй финансовый туман, контролируй лимит до зарплаты и прокачивай героя до Сверхчеловека!',
+    maleRoleLabel: 'Мужской образ',
+    femaleRoleLabel: 'Женский образ',
+    maleName: 'Тимур / Эдди Морра',
+    femaleName: 'Алия Морра',
+    maleSuperpowerBadge: 'Гиперфокус Эдди Морра',
+    femaleSuperpowerBadge: 'Шахматное зрение Алии',
+    maleSuperpowerShort: 'Взлом финансового тумана и 100% фокус',
+    femaleSuperpowerShort: 'Шахматное зрение бюджета на 5 шагов вперёд',
+    maleArchetype: 'Образ «Области тьмы» (Limitless)',
+    femaleArchetype: 'Образ «Ход королевы × Форс-мажоры × Limitless»',
+    maleDescription:
+      'Системный взлом хаоса и гиперфокус. Замечает закономерности там, где другие видят случайности, перекрывает утечки денег и просчитывает крупные шаги.',
+    femaleDescription:
+      'Стратегическая интуиция и видение жизни на 5 шагов вперёд. За секунду раскладывает бюджет по полочкам и элегантно достигает целей без стресса и долгов.',
+    selectedHeroBtn: 'Выбран ✓',
+    selectHeroBtn: 'Выбрать героя',
+    heroNameLabel: 'Имя твоего героя в рейтинге:',
+    heroNamePlaceholder: 'Введи своё имя...',
+    startGameBtn: 'Включить 100% ясности (Начать игру)',
     navFinance: 'Учёт и Задания',
     navCharacter: 'Персонаж',
     navSettings: 'Настройки',
@@ -318,6 +478,29 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     friendRewardsTitle: '🚀 Что получает ТВОЙ ДРУГ (Приглашённый):',
   },
   uz: {
+    onboardingBadge: 'OnPul: FinUroven • Limitless Edition',
+    onboardingTitle: 'Aniqlik qahramoningizni tanlang',
+    onboardingSubtitle:
+      'Kuniga 2 daqiqada moliyaviy tumanni tarqating, oylikkacha xavfsiz limitni boshqaring va qahramoningizni Superinsonga aylantiring!',
+    maleRoleLabel: 'Erkak qahramon',
+    femaleRoleLabel: 'Ayol qahramon',
+    maleName: 'Timur / Eddi Morra',
+    femaleName: 'Aliya Morra',
+    maleSuperpowerBadge: 'Eddi Morra Giperfokusi',
+    femaleSuperpowerBadge: 'Aliyaning Shaxmat Ko‘rishi',
+    maleSuperpowerShort: 'Moliyaviy tumanni yorib o‘tish va 100% fokus',
+    femaleSuperpowerShort: 'Byudjetni 5 qadam oldinga shaxmatdek ko‘rish',
+    maleArchetype: '«Limitless» (100% Aniqlik) obrazi',
+    femaleArchetype: '«Qirolicha yurishi × Limitless» obrazi',
+    maleDescription:
+      'Tartibsizlikni tizimli yengish va giperfokus. Boshqalar tasodif ko‘rgan joyda qonuniyatni topadi, pul oqib ketishini to‘xtatadi va yirik qadamlarni hisoblaydi.',
+    femaleDescription:
+      'Strategik intuitsiya va hayotni 5 qadam oldinga ko‘rish. Bir soniyada byudjetni joy-joyiga qo‘yadi va qarzlarsiz maqsadlarga erishadi.',
+    selectedHeroBtn: 'Tanlandi ✓',
+    selectHeroBtn: 'Qahramonni tanlash',
+    heroNameLabel: 'Reytingdagi qahramoningiz ismi:',
+    heroNamePlaceholder: 'Ismingizni kiriting...',
+    startGameBtn: '100% aniqlikni yoqish (O‘yinni boshlash)',
     navFinance: 'Hisob va Vazifalar',
     navCharacter: 'Qahramon',
     navSettings: 'Sozlamalar',
@@ -372,6 +555,29 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     friendRewardsTitle: '🚀 DO‘STINGIZ nima oladi (Taklif qilingan):',
   },
   en: {
+    onboardingBadge: 'OnPul: FinLevel • Limitless Edition',
+    onboardingTitle: 'Choose Your Hero of Clarity',
+    onboardingSubtitle:
+      'Clear the financial fog in 2 minutes a day, control your safe payday limit, and level up your hero to Superhuman!',
+    maleRoleLabel: 'Male Hero',
+    femaleRoleLabel: 'Female Hero',
+    maleName: 'Timur / Eddie Morra',
+    femaleName: 'Aliya Morra',
+    maleSuperpowerBadge: 'Eddie Morra Hyperfocus',
+    femaleSuperpowerBadge: 'Aliya Chess Vision',
+    maleSuperpowerShort: 'Financial fog hack & 100% mind focus',
+    femaleSuperpowerShort: 'Budget chess vision 5 moves ahead',
+    maleArchetype: 'Limitless Archetype',
+    femaleArchetype: 'Queen’s Gambit × Suits × Limitless',
+    maleDescription:
+      'Systemic chaos hacking and hyperfocus. Spots patterns where others see randomness, stops money leaks, and calculates major moves.',
+    femaleDescription:
+      'Strategic intuition and 5-steps-ahead vision. Organizes budgets in seconds and reaches goals effortlessly without debt.',
+    selectedHeroBtn: 'Selected ✓',
+    selectHeroBtn: 'Select Hero',
+    heroNameLabel: 'Your hero name on the leaderboard:',
+    heroNamePlaceholder: 'Enter your name...',
+    startGameBtn: 'Activate 100% Clarity (Start Game)',
     navFinance: 'Finance & Tasks',
     navCharacter: 'Character',
     navSettings: 'Settings',
@@ -426,6 +632,29 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     friendRewardsTitle: '🚀 What YOUR FRIEND Receives (Invited):',
   },
   de: {
+    onboardingBadge: 'OnPul: FinLevel • Limitless Edition',
+    onboardingTitle: 'Wähle deinen Helden der Klarheit',
+    onboardingSubtitle:
+      'Lichte den Finanznebel in 2 Minuten täglich, kontrolliere dein Tageslimit und entwickle deinen Helden zum Übermenschen!',
+    maleRoleLabel: 'Männlicher Held',
+    femaleRoleLabel: 'Weibliche Heldin',
+    maleName: 'Timur / Eddie Morra',
+    femaleName: 'Aliya Morra',
+    maleSuperpowerBadge: 'Eddie Morra Hyperfokus',
+    femaleSuperpowerBadge: 'Aliyas Schach-Vision',
+    maleSuperpowerShort: 'Finanznebel-Hack & 100% Fokus',
+    femaleSuperpowerShort: 'Budget-Schachblick 5 Züge voraus',
+    maleArchetype: '„Limitless“-Archetyp',
+    femaleArchetype: '„Damengambit × Suits × Limitless“',
+    maleDescription:
+      'Systematischer Chaos-Hack und Hyperfokus. Erkennt Muster, stoppt Geldlecks und berechnet große strategische Schritte.',
+    femaleDescription:
+      'Strategische Intuition und Planung 5 Züge voraus. Ordnet das Budget in Sekunden und erreicht Ziele ohne Schulden.',
+    selectedHeroBtn: 'Ausgewählt ✓',
+    selectHeroBtn: 'Held wählen',
+    heroNameLabel: 'Name deines Helden in der Rangliste:',
+    heroNamePlaceholder: 'Deinen Namen eingeben...',
+    startGameBtn: '100% Klarheit aktivieren (Spiel starten)',
     navFinance: 'Finanzen & Aufgaben',
     navCharacter: 'Charakter',
     navSettings: 'Einstellungen',
@@ -480,6 +709,29 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     friendRewardsTitle: '🚀 Was DEIN FREUND erhält (Eingeladener):',
   },
   ko: {
+    onboardingBadge: 'OnPul: 금융레벨 • Limitless Edition',
+    onboardingTitle: '명료함의 영웅을 선택하세요',
+    onboardingSubtitle:
+      '하루 2분으로 금융 안개를 걷어내고, 월급날까지의 안전 한도를 관리하며 초인으로 진화하세요!',
+    maleRoleLabel: '남성 캐릭터',
+    femaleRoleLabel: '여성 캐릭터',
+    maleName: '티무르 / 에디 모라',
+    femaleName: '알리야 모라',
+    maleSuperpowerBadge: '에디 모라 하이퍼포커스',
+    femaleSuperpowerBadge: '알리야의 체스 비전',
+    maleSuperpowerShort: '금융 안개 해킹 및 100% 두뇌 집중',
+    femaleSuperpowerShort: '5수 앞을 내다보는 예산 체스 비전',
+    maleArchetype: '리미트리스(Limitless) 아키타입',
+    femaleArchetype: '퀸스 갬빗 × 슈츠 × 리미트리스',
+    maleDescription:
+      '체계적인 혼돈 해킹과 초집중력. 남들이 우연이라 믿는 곳에서 패턴을 찾아내고 자금 누수를 차단합니다.',
+    femaleDescription:
+      '전략적 직관과 5수 앞을 내다보는 통찰력. 단 몇 초 만에 예산을 정리하고 부채 없이 목표를 달성합니다.',
+    selectedHeroBtn: '선택됨 ✓',
+    selectHeroBtn: '영웅 선택',
+    heroNameLabel: '리더보드에 표시될 영웅 이름:',
+    heroNamePlaceholder: '이름을 입력하세요...',
+    startGameBtn: '100% 명료성 활성화 (게임 시작)',
     navFinance: '가계부 및 미션',
     navCharacter: '캐릭터',
     navSettings: '설정',
@@ -534,6 +786,29 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     friendRewardsTitle: '🚀 친구가 받는 보상 (초대받은 친구):',
   },
   es: {
+    onboardingBadge: 'OnPul: FinNivel • Limitless Edition',
+    onboardingTitle: 'Elige a tu héroe de claridad',
+    onboardingSubtitle:
+      '¡Disipa la niebla financiera en 2 minutos al día, controla tu límite hasta el sueldo y evoluciona a Superhumano!',
+    maleRoleLabel: 'Héroe Masculino',
+    femaleRoleLabel: 'Heroína Femenina',
+    maleName: 'Timur / Eddie Morra',
+    femaleName: 'Aliya Morra',
+    maleSuperpowerBadge: 'Hiperfoco de Eddie Morra',
+    femaleSuperpowerBadge: 'Visión de Ajedrez de Aliya',
+    maleSuperpowerShort: 'Hackeo de niebla financiera y 100% enfoque',
+    femaleSuperpowerShort: 'Visión de presupuesto 5 jugadas adelante',
+    maleArchetype: 'Arquetipo «Sin Límites» (Limitless)',
+    femaleArchetype: '«Gambito de Dama × Suits × Limitless»',
+    maleDescription:
+      'Hackeo sistémico del caos e hiperfoco. Detecta patrones donde otros ven azar, frena fugas de dinero y calcula grandes pasos.',
+    femaleDescription:
+      'Intuición estratégica y visión 5 pasos adelante. Organiza el presupuesto en segundos y alcanza metas sin estrés ni deudas.',
+    selectedHeroBtn: 'Seleccionado ✓',
+    selectHeroBtn: 'Elegir héroe',
+    heroNameLabel: 'Nombre de tu héroe en el ranking:',
+    heroNamePlaceholder: 'Ingresa tu nombre...',
+    startGameBtn: 'Activar 100% Claridad (Iniciar Juego)',
     navFinance: 'Finanzas y Tareas',
     navCharacter: 'Personaje',
     navSettings: 'Ajustes',

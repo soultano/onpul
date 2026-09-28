@@ -10,6 +10,7 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:5173',
     viewport: { width: 390, height: 844 },
+    locale: 'ru-RU',
     trace: 'on-first-retry',
   },
   projects: [
@@ -18,6 +19,7 @@ export default defineConfig({
       use: {
         browserName: 'chromium',
         viewport: { width: 390, height: 844 },
+        locale: 'ru-RU',
       },
     },
   ],

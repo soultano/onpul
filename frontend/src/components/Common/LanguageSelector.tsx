@@ -21,10 +21,18 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   return (
     <div
       data-testid="language-selector"
+      data-active-lang={currentLanguage}
       className={`flex items-center justify-center flex-wrap gap-1 ${
         compact ? '' : 'bg-white rounded-2xl p-1.5 border border-slate-200/90 shadow-2xs'
       }`}
     >
+      <span
+        data-testid="active-language-code"
+        data-active-lang={currentLanguage}
+        className="sr-only"
+      >
+        {currentLanguage}
+      </span>
       {SUPPORTED_LANGUAGES.map((lang) => {
         const isActive = currentLanguage === lang.code;
         return (
@@ -32,6 +40,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
             key={lang.code}
             type="button"
             data-testid={`lang-btn-${lang.code}`}
+            aria-pressed={isActive}
             onClick={() => {
               haptics.selection();
               onSelectLanguage(lang.code);

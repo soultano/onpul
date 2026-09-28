@@ -1,4 +1,7 @@
-import { SupportedLanguage } from '../i18n/translations';
+import {
+  SupportedLanguage,
+  detectDefaultLanguage,
+} from '../i18n/translations';
 
 export type CharacterGender = 'male' | 'female';
 
@@ -82,7 +85,7 @@ export function createInitialGameState(
 ): LimitlessGameState {
   return {
     hasSelectedCharacter: false,
-    language: 'ru',
+    language: detectDefaultLanguage(),
     gender: 'male',
     playerName: defaultName,
     xp: 0,

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CHARACTER_PROFILES } from '../../data/limitlessContent';
 import { CharacterGender } from '../../types/game';
-import { SupportedLanguage } from '../../i18n/translations';
+import { SupportedLanguage, TRANSLATIONS } from '../../i18n/translations';
 import { LanguageSelector } from '../Common/LanguageSelector';
 import { useTelegram } from '../../hooks/useTelegram';
 
@@ -24,6 +24,8 @@ export const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
     initialName && initialName !== 'Нодирбек' ? initialName : 'Тимур'
   );
 
+  const t = TRANSLATIONS[currentLanguage];
+
   const handleSelectGender = (gender: CharacterGender) => {
     haptics.selection();
     setSelectedGender(gender);
@@ -42,6 +44,7 @@ export const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
   return (
     <div
       data-testid="character-select-screen"
+      data-active-lang={currentLanguage}
       className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between max-w-md mx-auto px-4 py-5"
     >
       {/* Переключатель 6 языков */}
@@ -57,13 +60,13 @@ export const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
       <div className="text-center mb-3">
         <div className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-extrabold px-3.5 py-1 rounded-full mb-2 shadow-sm">
           <span>🧠</span>
-          <span>OnPul: ФинУровень • Limitless Edition</span>
+          <span>{t.onboardingBadge}</span>
         </div>
         <h1 className="text-2xl font-black tracking-tight text-slate-900">
-          Выбери своего героя ясности
+          {t.onboardingTitle}
         </h1>
         <p className="text-xs text-slate-600 mt-1 leading-relaxed max-w-xs mx-auto">
-          За 2 минуты в день разгоняй финансовый туман, контролируй лимит до зарплаты и прокачивай героя до Сверхчеловека!
+          {t.onboardingSubtitle}
         </p>
       </div>
 
@@ -72,6 +75,18 @@ export const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
         {(['male', 'female'] as CharacterGender[]).map((genderKey) => {
           const profile = CHARACTER_PROFILES[genderKey];
           const isSelected = selectedGender === genderKey;
+          const roleLabel =
+            genderKey === 'male' ? t.maleRoleLabel : t.femaleRoleLabel;
+          const localizedName =
+            genderKey === 'male' ? t.maleName : t.femaleName;
+          const superpowerBadge =
+            genderKey === 'male'
+              ? t.maleSuperpowerBadge
+              : t.femaleSuperpowerBadge;
+          const superpowerShort =
+            genderKey === 'male'
+              ? t.maleSuperpowerShort
+              : t.femaleSuperpowerShort;
 
           return (
             <div
@@ -89,7 +104,7 @@ export const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
                 <div className="relative rounded-2xl overflow-hidden bg-slate-100 aspect-[4/5] mb-2.5 border border-slate-100">
                   <img
                     src={profile.imageUrl}
-                    alt={profile.name}
+                    alt={localizedName}
                     className="w-full h-full object-cover object-top"
                   />
                   <div className="absolute top-2 right-2">
@@ -105,10 +120,10 @@ export const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
                   </div>
                   <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-900/80 via-slate-900/35 to-transparent p-2 pt-6">
                     <span className="inline-block text-[10px] font-extrabold text-amber-300 uppercase tracking-wider">
-                      {genderKey === 'male' ? 'Мужской образ' : 'Женский образ'}
+                      {roleLabel}
                     </span>
                     <div className="text-xs font-black text-white leading-tight">
-                      {profile.name}
+                      {localizedName}
                     </div>
                   </div>
                 </div>
@@ -116,11 +131,11 @@ export const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
                 {/* Описание суперсилы */}
                 <div className="inline-flex items-center gap-1 bg-sky-50 text-sky-700 border border-sky-200/70 rounded-lg px-2 py-0.5 text-[10px] font-extrabold mb-1.5">
                   <span>⚡</span>
-                  <span className="truncate">{profile.superpowerBadge}</span>
+                  <span className="truncate">{superpowerBadge}</span>
                 </div>
 
                 <p className="text-[11px] font-semibold text-slate-700 leading-snug mb-3">
-                  {profile.superpowerShort}
+                  {superpowerShort}
                 </p>
               </div>
 
@@ -137,7 +152,7 @@ export const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
-                {isSelected ? 'Выбран ✓' : 'Выбрать героя'}
+                {isSelected ? t.selectedHeroBtn : t.selectHeroBtn}
               </button>
             </div>
           );
@@ -148,10 +163,10 @@ export const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
       <div className="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-soft mt-2">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-extrabold text-slate-800">
-            Имя твоего героя в рейтинге:
+            {t.heroNameLabel}
           </span>
           <span className="text-[11px] font-bold text-emerald-600">
-            {CHARACTER_PROFILES[selectedGender].archetype}
+            {selectedGender === 'male' ? t.maleArchetype : t.femaleArchetype}
           </span>
         </div>
 
@@ -160,12 +175,12 @@ export const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
           data-testid="player-name-input"
           value={playerName}
           onChange={(e) => setPlayerName(e.target.value)}
-          placeholder="Введи своё имя..."
+          placeholder={t.heroNamePlaceholder}
           className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-bold text-sm focus:outline-none focus:border-emerald-600 focus:bg-white transition-colors mb-3"
         />
 
         <p className="text-[11px] text-slate-500 leading-relaxed mb-4">
-          {CHARACTER_PROFILES[selectedGender].description}
+          {selectedGender === 'male' ? t.maleDescription : t.femaleDescription}
         </p>
 
         <button
@@ -175,7 +190,7 @@ export const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
           className="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-sm shadow-lg shadow-emerald-600/25 active:scale-[0.99] transition-all flex items-center justify-center gap-2"
         >
           <span>🚀</span>
-          <span>Включить 100% ясности (Начать игру)</span>
+          <span>{t.startGameBtn}</span>
         </button>
       </div>
     </div>

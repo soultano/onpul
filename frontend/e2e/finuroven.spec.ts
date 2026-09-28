@@ -656,4 +656,102 @@ test.describe('OnPul «ФинУровень» (Limitless Edition) — Компл
     );
     await page.getByTestId('close-leaderboard-btn').click();
   });
+
+  test('Тест 7: Автоопределение языка по локали браузера/системы и приоритетный фоллбэк на узбекский язык uz', async ({
+    browser,
+  }) => {
+    // 1. Локаль ko-KR -> игра автоматически выбирает корейский язык (ko)
+    const koContext = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      locale: 'ko-KR',
+    });
+    const koPage = await koContext.newPage();
+    await koPage.goto('/');
+    await expect(koPage.getByTestId('character-select-screen')).toHaveAttribute(
+      'data-active-lang',
+      'ko'
+    );
+    await expect(koPage.getByTestId('active-language-code')).toHaveText('ko');
+    await expect(
+      koPage.getByRole('heading', { name: /명료함의 영웅을 선택하세요/i })
+    ).toBeVisible();
+    await koPage.getByTestId('start-game-btn').click();
+    await koPage.getByTestId('tutorial-skip-btn').click();
+    await expect(koPage.getByTestId('nav-settings-kyc')).toContainText('설정');
+    await koContext.close();
+
+    // 2. Локаль de-DE -> игра автоматически выбирает немецкий язык (de)
+    const deContext = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      locale: 'de-DE',
+    });
+    const dePage = await deContext.newPage();
+    await dePage.goto('/');
+    await expect(dePage.getByTestId('character-select-screen')).toHaveAttribute(
+      'data-active-lang',
+      'de'
+    );
+    await expect(dePage.getByTestId('active-language-code')).toHaveText('de');
+    await expect(
+      dePage.getByRole('heading', {
+        name: /Wähle deinen Helden der Klarheit/i,
+      })
+    ).toBeVisible();
+    await dePage.getByTestId('start-game-btn').click();
+    await dePage.getByTestId('tutorial-skip-btn').click();
+    await expect(dePage.getByTestId('nav-settings-kyc')).toContainText(
+      'Einstellungen'
+    );
+    await deContext.close();
+
+    // 3. Неподдерживаемая локаль (fr-FR / tr-TR) -> приоритетный фоллбэк на узбекский язык (uz)
+    const fallbackContext = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      locale: 'fr-FR',
+    });
+    const uzFallbackPage = await fallbackContext.newPage();
+    await uzFallbackPage.goto('/');
+    await expect(
+      uzFallbackPage.getByTestId('character-select-screen')
+    ).toHaveAttribute('data-active-lang', 'uz');
+    await expect(uzFallbackPage.getByTestId('active-language-code')).toHaveText(
+      'uz'
+    );
+    await expect(
+      uzFallbackPage.getByRole('heading', {
+        name: /Aniqlik qahramoningizni tanlang/i,
+      })
+    ).toBeVisible();
+    await expect(uzFallbackPage.getByTestId('select-male-btn')).toHaveText(
+      'Tanlandi ✓'
+    );
+    await uzFallbackPage.getByTestId('start-game-btn').click();
+    await uzFallbackPage.getByTestId('tutorial-skip-btn').click();
+    await expect(uzFallbackPage.getByTestId('nav-settings-kyc')).toContainText(
+      'Sozlamalar'
+    );
+    await fallbackContext.close();
+
+    // 4. Локаль ru-RU -> игра автоматически открывается на русском языке (ru)
+    const ruContext = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      locale: 'ru-RU',
+    });
+    const ruPage = await ruContext.newPage();
+    await ruPage.goto('/');
+    await expect(ruPage.getByTestId('character-select-screen')).toHaveAttribute(
+      'data-active-lang',
+      'ru'
+    );
+    await expect(ruPage.getByTestId('active-language-code')).toHaveText('ru');
+    await expect(
+      ruPage.getByRole('heading', { name: /Выбери своего героя ясности/i })
+    ).toBeVisible();
+    await ruPage.getByTestId('start-game-btn').click();
+    await ruPage.getByTestId('tutorial-skip-btn').click();
+    await expect(ruPage.getByTestId('nav-settings-kyc')).toContainText(
+      'Настройки'
+    );
+    await ruContext.close();
+  });
 });
