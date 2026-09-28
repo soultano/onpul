@@ -26,7 +26,8 @@ build/
 *.sqlite3
 **/dev.db
 **/dev.db-journal
-data/
+/data/
+!frontend/src/data/
 
 # Python & Logs
 __pycache__/

@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { AvatarDisplay } from './AvatarDisplay';
+import { CHARACTER_PROFILES } from '../data/limitlessContent';
+import { CharacterGender } from '../types/game';
 import { useTelegram } from '../hooks/useTelegram';
-import { getAvatarStage } from '../config/xp';
 
 interface LevelUpModalProps {
   isOpen: boolean;
   level: number;
   title: string;
-  gender: 'male' | 'female' | 'none';
+  gender: CharacterGender | 'none';
   onClose: () => void;
 }
 
@@ -24,49 +24,58 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       haptics.notification('success');
-
-      // Запуск салюта конфетти
       try {
         confetti({
-          particleCount: 80,
+          particleCount: 75,
           spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#10b981', '#059669', '#f59e0b', '#3b82f6'],
+          origin: { y: 0.4 },
+          colors: ['#10b981', '#0ea5e9', '#f59e0b', '#6366f1'],
         });
       } catch (e) {}
+
+      const timer = setTimeout(() => {
+        onClose();
+      }, 4200);
+      return () => clearTimeout(timer);
     }
-  }, [isOpen, haptics]);
+  }, [isOpen, haptics, onClose]);
 
   if (!isOpen) return null;
 
-  const stage = getAvatarStage(level);
+  const charKey: CharacterGender = gender === 'female' ? 'female' : 'male';
+  const profile = CHARACTER_PROFILES[charKey];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-float-up">
-      <div className="w-full max-w-sm overflow-hidden rounded-3xl bg-tg-bg border border-primary-500/30 p-6 text-center shadow-2xl">
-        <div className="text-4xl mb-2 animate-bounce">🎉</div>
-        <h2 className="text-2xl font-black text-tg-text mb-1">НОВЫЙ УРОВЕНЬ!</h2>
-        <p className="text-xs text-tg-hint mb-6">Ваша финансовая грамотность растет каждый день</p>
+    <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm pointer-events-none animate-float-up">
+      <div
+        data-testid="level-up-modal"
+        className="w-full rounded-3xl bg-white/95 backdrop-blur-md border-2 border-amber-400 p-4 shadow-2xl flex items-center gap-3.5"
+      >
+        <img
+          src={profile.imageUrl}
+          alt={profile.name}
+          className="w-14 h-14 rounded-2xl object-cover object-top border-2 border-amber-400 shrink-0 shadow-sm"
+        />
 
-        {/* Аватар */}
-        <div className="flex justify-center mb-4">
-          <AvatarDisplay gender={gender} stage={stage} size={110} />
-        </div>
-
-        {/* Плашка уровня */}
-        <div className="inline-block bg-primary-50 border border-primary-500/30 text-primary-700 px-4 py-1.5 rounded-full font-black text-sm mb-2">
-          Уровень {level}
-        </div>
-
-        <div className="text-lg font-extrabold text-tg-text mb-6">
-          Звание: <span className="text-primary-600">{title}</span>
+        <div className="flex-1 min-w-0 text-left">
+          <div className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-[10px] font-black px-2 py-0.5 rounded-full mb-0.5">
+            <span>🎉 LEVEL UP!</span>
+          </div>
+          <h3 className="text-sm font-black text-slate-900 leading-tight">
+            Новое прозрение! Уровень {level} достигнут!
+          </h3>
+          <p className="text-[11px] font-bold text-emerald-700 truncate">
+            Стадия: {title}
+          </p>
         </div>
 
         <button
+          type="button"
+          data-testid="close-level-up-btn"
           onClick={onClose}
-          className="w-full py-3.5 px-6 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-sm shadow-lg shadow-primary-600/30 transition-transform active:scale-95"
+          className="pointer-events-auto px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shrink-0 shadow-xs"
         >
-          Продолжить
+          Ок ✓
         </button>
       </div>
     </div>

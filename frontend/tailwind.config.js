@@ -8,13 +8,13 @@ export default {
     extend: {
       colors: {
         tg: {
-          bg: 'var(--tg-theme-bg-color, #ffffff)',
-          text: 'var(--tg-theme-text-color, #0f172a)',
-          hint: 'var(--tg-theme-hint-color, #64748b)',
-          link: 'var(--tg-theme-link-color, #059669)',
-          button: 'var(--tg-theme-button-color, #059669)',
-          buttonText: 'var(--tg-theme-button-text-color, #ffffff)',
-          secondaryBg: 'var(--tg-theme-secondary-bg-color, #f8fafc)',
+          bg: '#f8fafc',
+          text: '#0f172a',
+          hint: '#64748b',
+          link: '#059669',
+          button: '#059669',
+          buttonText: '#ffffff',
+          secondaryBg: '#ffffff',
         },
         primary: {
           50: '#ecfdf5',
@@ -24,6 +24,12 @@ export default {
           700: '#047857',
         }
       },
+      boxShadow: {
+        'soft': '0 8px 30px rgba(15, 23, 42, 0.06)',
+        'glow-emerald': '0 0 25px rgba(16, 185, 129, 0.28)',
+        'glow-sky': '0 0 25px rgba(14, 165, 233, 0.28)',
+        'glow-amber': '0 0 28px rgba(245, 158, 11, 0.35)',
+      }
     },
   },
   plugins: [],
