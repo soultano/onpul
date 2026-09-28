@@ -457,5 +457,102 @@ test.describe('OnPul «ФинУровень» (Limitless Edition) — Компл
     await expect(nztModal).toBeHidden();
     await expect(page.getByTestId('hud-nzt-currency')).toHaveText('1 NZT');
   });
-});
 
+  test('Тест 6: Ежедневная соревновательная мини-игра «⚡ Нейро-Блиц: Дуэль Дня», «💰 Нейро-Сейф Дивидендов (Ур. 1–10)», Обменник Выгод и PRO-Монетизация', async ({
+    page,
+  }) => {
+    await completeOnboardingAndTutorial(page, 'male', 'Тимур');
+
+    // 1. Проверка отображения на главном экране карточек Нейро-Блица и Нейро-Сейфа (400 Coins на старте)
+    await expect(page.getByTestId('daily-blitz-banner')).toBeVisible();
+    await expect(page.getByTestId('neuro-vault-widget')).toBeVisible();
+    await expect(page.getByTestId('hud-onpul-coins')).toContainText(
+      '400 💰 Coins'
+    );
+
+    // 2. Сбор ежедневных дивидендов из Сейфа в 1 клик (400 + 250 = 650 💰, +20 XP)
+    await page.getByTestId('claim-vault-btn').click();
+    await expect(page.getByTestId('hud-onpul-coins')).toContainText(
+      '650 💰 Coins'
+    );
+
+    // 3. Запуск мини-игры «⚡ Нейро-Блиц: Сделка или Ловушка?»
+    await page.getByTestId('open-blitz-btn').click();
+    const blitzModal = page.getByTestId('neuro-blitz-modal');
+    await expect(blitzModal).toBeVisible();
+
+    // Выбираем правильный ход Сверхчеловека (Вариант А)
+    await page.getByTestId('blitz-option-a').click();
+    await expect(page.getByTestId('blitz-result-box')).toBeVisible();
+    await expect(page.getByTestId('blitz-result-box')).toContainText(
+      '+30 🏆 Кубков Лиги'
+    );
+
+    // Проверяем победу над Соперником Дня Сардором (120 + 30 = 150 🏆 >= 145 🏆) и получение +1 💎 NZT
+    await expect(page.getByTestId('blitz-duel-won-badge')).toBeVisible();
+    await expect(page.getByTestId('blitz-duel-won-badge')).toContainText(
+      'Соперник дня Сардор повержен!'
+    );
+
+    // Переход к следующей дилемме и закрытие окна Блица
+    await page.getByTestId('blitz-next-card-btn').click();
+    await expect(page.getByTestId('blitz-result-box')).toBeHidden();
+    await page.getByTestId('close-blitz-modal-btn').click();
+    await expect(blitzModal).toBeHidden();
+
+    // На главном экране: 1 💎 NZT и 650 + 200 = 850 💰 Coins
+    await expect(page.getByTestId('hud-nzt-currency')).toHaveText('1 NZT');
+    await expect(page.getByTestId('hud-onpul-coins')).toContainText(
+      '850 💰 Coins'
+    );
+
+    // 4. Открытие окна «💰 Нейро-Сейф, Выгоды и PRO-Монетизация»
+    await page.getByTestId('open-vault-shop-btn').click();
+    const vaultModal = page.getByTestId('vault-monetization-modal');
+    await expect(vaultModal).toBeVisible();
+    await expect(page.getByTestId('vault-current-level')).toHaveText(
+      'Ур. 1/10'
+    );
+
+    // Прокачка уровня Сейфа: Ур. 1/10 -> Ур. 2/10 (+40 XP)
+    await page.getByTestId('upgrade-vault-btn').click();
+    await expect(page.getByTestId('vault-current-level')).toHaveText(
+      'Ур. 2/10'
+    );
+
+    // Обмен монет на реальный промо-буст +2% к сбережениям Niyat Application (промокод ONPUL-NIYAT-38)
+    await page.getByTestId('redeem-niyat-boost-btn').click();
+    await expect(page.getByTestId('niyat-promo-code')).toBeVisible();
+    await expect(page.getByTestId('niyat-promo-code')).toContainText(
+      'ONPUL-NIYAT-38'
+    );
+
+    // Покупка билета еженедельного розыгрыша (🎟️ Билетов: 1)
+    await page.getByTestId('redeem-raffle-ticket-btn').click();
+    await expect(page.getByTestId('raffle-tickets-count')).toContainText(
+      '🎟️ Билетов: 1'
+    );
+
+    // Активация PRO-Подписки «👑 NZT Pass» (+100 XP, +2 💎 NZT, +500 💰 Coins)
+    await page.getByTestId('activate-pro-pass-btn').click();
+    await expect(page.getByTestId('pro-pass-active-badge')).toBeVisible();
+    await expect(page.getByTestId('pro-pass-active-badge')).toContainText(
+      'Статус NZT Pass PRO Активен!'
+    );
+
+    await page.getByTestId('close-vault-modal-btn').click();
+    await expect(vaultModal).toBeHidden();
+
+    // Проверяем, что кристаллы выросли до 3 💎 NZT (1 за дуэль + 2 за PRO Pass)
+    await expect(page.getByTestId('hud-nzt-currency')).toHaveText('3 NZT');
+
+    // 5. Проверка блока «🎁 Призовой Пул Недели (Топ-1, Топ-2, Топ-3)» в модалке Лидерборда
+    await page.getByTestId('orb-leaderboard').click();
+    await expect(page.getByTestId('leaderboard-modal')).toBeVisible();
+    await expect(page.getByTestId('leaderboard-prize-pool')).toBeVisible();
+    await expect(page.getByTestId('leaderboard-prize-pool')).toContainText(
+      'Призовой Пул Недели (Топ-1, Топ-2, Топ-3)'
+    );
+    await page.getByTestId('close-leaderboard-btn').click();
+  });
+});
