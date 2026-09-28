@@ -334,4 +334,128 @@ test.describe('OnPul «ФинУровень» (Limitless Edition) — Компл
       '600 000 сум / день'
     );
   });
+
+  test('Тест 5: Мультиязычность (6 языков), отдельный F.A.Q. в Настройках, Двусторонняя рефералка Win-Win, Выпадающее меню целей и Лаборатория валюты 💎 NZT', async ({
+    page,
+  }) => {
+    await completeOnboardingAndTutorial(page, 'male', 'Тимур');
+
+    // 1. Проверка перевода интерфейса на все 6 языков (UZ, EN, DE, KO, ES, RU) и лаконичной кнопки «Настройки» снизу
+    await page.getByTestId('lang-btn-uz').click();
+    await expect(page.getByTestId('nav-settings-kyc')).toContainText(
+      'Sozlamalar'
+    );
+
+    await page.getByTestId('lang-btn-en').click();
+    await expect(page.getByTestId('nav-settings-kyc')).toContainText(
+      'Settings'
+    );
+
+    await page.getByTestId('lang-btn-de').click();
+    await expect(page.getByTestId('nav-settings-kyc')).toContainText(
+      'Einstellungen'
+    );
+
+    await page.getByTestId('lang-btn-ko').click();
+    await expect(page.getByTestId('nav-settings-kyc')).toContainText('설정');
+
+    await page.getByTestId('lang-btn-es').click();
+    await expect(page.getByTestId('nav-settings-kyc')).toContainText('Ajustes');
+
+    await page.getByTestId('lang-btn-ru').click();
+    await expect(page.getByTestId('nav-settings-kyc')).toContainText(
+      'Настройки'
+    );
+
+    // 2. Проверка отдельного раздела F.A.Q. внутри экрана «Настройки»
+    await page.getByTestId('nav-settings-kyc').click();
+    await expect(page.getByTestId('settings-kyc-screen')).toBeVisible();
+    await page.getByTestId('settings-faq-tab').click();
+
+    await expect(page.getByTestId('faq-section')).toBeVisible();
+    await expect(page.getByTestId('faq-item-1')).toBeVisible();
+    await expect(page.getByTestId('faq-item-2')).toBeVisible();
+    await expect(page.getByTestId('faq-item-3')).toBeVisible();
+    await expect(page.getByTestId('faq-item-4')).toBeVisible();
+
+    // 3. Возврат на главный экран и проверка Двусторонней реферальной программы (Win-Win)
+    await page.getByTestId('nav-character-main').click();
+    await page.getByTestId('orb-friends').click();
+    await expect(page.getByTestId('friends-modal')).toBeVisible();
+
+    // Проверяем карточки наград Приглашающего и Приглашённого друга
+    await expect(page.getByTestId('referral-inviter-rewards')).toBeVisible();
+    await expect(page.getByTestId('referral-friend-rewards')).toBeVisible();
+
+    // Приглашаем друга (+50 XP и +1 💎 NZT)
+    await page.getByTestId('invite-friend-btn').click();
+    // Активируем инвайт-код друга (+100 XP и +1 💎 NZT)
+    await page.getByTestId('friend-code-input').fill('LIMITLESS-VIP');
+    await page.getByTestId('claim-friend-invite-btn').click();
+    await expect(page.getByTestId('claim-friend-invite-btn')).toContainText(
+      'Бонус получен (+100 XP ✓)'
+    );
+    await page.getByTestId('close-friends-modal-btn').click();
+
+    // Проверяем, что начислено 2 💎 NZT и 25 + 50 + 100 = 175 XP (Уровень 3)
+    await expect(page.getByTestId('hud-nzt-currency')).toHaveText('2 NZT');
+    await expect(page.getByTestId('hud-level')).toHaveText('Уровень 3');
+
+    // 4. Проверка выпадающего меню целей (Автомобиль, Квартира, Путешествие)
+    await page.getByTestId('nav-finance-tasks').click();
+    await expect(page.getByTestId('finance-tasks-screen')).toBeVisible();
+
+    const goalSelect = page.getByTestId('goal-category-select');
+    await expect(goalSelect).toBeVisible();
+
+    // Выбор «Квартира / Недвижимость» -> проверка автоподстановки
+    await goalSelect.selectOption('apartment');
+    await expect(page.getByTestId('goal-title-input')).toHaveValue(
+      'Первоначальный взнос на квартиру'
+    );
+    await expect(page.getByTestId('goal-amount-input')).toHaveValue(
+      '250000000'
+    );
+
+    // Выбор «Путешествие / Отпуск» -> проверка автоподстановки
+    await goalSelect.selectOption('travel');
+    await expect(page.getByTestId('goal-title-input')).toHaveValue(
+      'Путешествие / Отпуск'
+    );
+    await expect(page.getByTestId('goal-amount-input')).toHaveValue('15000000');
+
+    // Выбор «Автомобиль» и добавление цели (+40 XP)
+    await goalSelect.selectOption('car');
+    await expect(page.getByTestId('goal-title-input')).toHaveValue(
+      'Автомобиль мечты'
+    );
+    await expect(page.getByTestId('goal-amount-input')).toHaveValue(
+      '150000000'
+    );
+    await page.getByTestId('add-goal-btn').click();
+    await expect(page.getByTestId('goal-debt-item').first()).toContainText(
+      'Автомобиль мечты'
+    );
+
+    // 5. Проверка редкой валюты 💎 NZT и «Лаборатории NZT»
+    await page.getByTestId('nav-character-main').click();
+    await page.getByTestId('hud-nzt-btn').click();
+
+    const nztModal = page.getByTestId('nzt-lab-modal');
+    await expect(nztModal).toBeVisible();
+    await expect(page.getByTestId('nzt-lab-balance')).toContainText('💎 2 NZT');
+
+    // Покупка «🧠 Нейро-Импульс ×2 XP» за 1 💎 NZT
+    await page.getByTestId('buy-nzt-neuroboost-btn').click();
+    await expect(page.getByTestId('nzt-ai-audit-result')).toBeVisible();
+    await expect(page.getByTestId('nzt-ai-audit-result')).toContainText(
+      'Автомобиль мечты'
+    );
+    await expect(page.getByTestId('nzt-lab-balance')).toContainText('💎 1 NZT');
+
+    await page.getByTestId('close-nzt-lab-btn').click();
+    await expect(nztModal).toBeHidden();
+    await expect(page.getByTestId('hud-nzt-currency')).toHaveText('1 NZT');
+  });
 });
+
