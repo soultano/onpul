@@ -55,7 +55,14 @@ export interface LimitlessGameState {
   blitzCardsPlayedToday: number; // Сыграно карт Нейро-Блица сегодня
   proPassActive: boolean; // 👑 Активен ли статус NZT Pass (Сверхчеловек PRO)
   raffleTickets: number; // 🎟️ Билеты еженедельного призового розыгрыша
-  niyatBoostRedeemed: boolean; // Активирован ли промо-буст +2% Niyat Application
+  niyatBoostRedeemed: boolean; // Получен ли Золотой Промо-Код OnPul (ONPUL-VIP-2026)
+  pvpEnergy: number; // ⚡ Энергия PvP-боёв (максимум 3)
+  pvpCooldownUntil: number | null; // ⏳ Таймстемп отката КД (1 час за 1 бой, 3 часа полностью)
+  pvpBattlesPlayed: number; // ⚔️ Всего сыграно PvP-боёв
+  pvpChestProgress: number; // 🎁 Прогресс Мега-Сундука за 10 боёв (0..10)
+  unlockedSkins: string[]; // 🧥 Выбитые в PvP скины персонажа
+  equippedSkin: string; // 🧥 Текущий надетый скин
+  unlockedTips: string[]; // 💡 Выбитые в PvP редкие финансовые советы
   tutorialCompleted: boolean;
   tutorialRewardClaimed: boolean;
   balance: number; // Текущий баланс на картах/наличными (сум)
@@ -94,6 +101,13 @@ export function createInitialGameState(
     proPassActive: false,
     raffleTickets: 0,
     niyatBoostRedeemed: false,
+    pvpEnergy: 3,
+    pvpCooldownUntil: null,
+    pvpBattlesPlayed: 9,
+    pvpChestProgress: 9,
+    unlockedSkins: ['default'],
+    equippedSkin: 'default',
+    unlockedTips: [],
     tutorialCompleted: false,
     tutorialRewardClaimed: false,
     balance: 4500000,

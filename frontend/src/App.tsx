@@ -77,6 +77,24 @@ function loadInitialState(
           raffleTickets:
             typeof parsed.raffleTickets === 'number' ? parsed.raffleTickets : 0,
           niyatBoostRedeemed: Boolean(parsed.niyatBoostRedeemed),
+          pvpEnergy:
+            typeof parsed.pvpEnergy === 'number' ? parsed.pvpEnergy : 3,
+          pvpCooldownUntil: parsed.pvpCooldownUntil || null,
+          pvpBattlesPlayed:
+            typeof parsed.pvpBattlesPlayed === 'number'
+              ? parsed.pvpBattlesPlayed
+              : 9,
+          pvpChestProgress:
+            typeof parsed.pvpChestProgress === 'number'
+              ? parsed.pvpChestProgress
+              : 9,
+          unlockedSkins: Array.isArray(parsed.unlockedSkins)
+            ? parsed.unlockedSkins
+            : ['default'],
+          equippedSkin: parsed.equippedSkin || 'default',
+          unlockedTips: Array.isArray(parsed.unlockedTips)
+            ? parsed.unlockedTips
+            : [],
           profileQuests: {
             ...base.profileQuests,
             ...(parsed.profileQuests || {}),
@@ -269,7 +287,7 @@ export function App() {
     });
   };
 
-  // 4. Выполнение Ежедневного задания (+100 XP, каждые 3 задания = +1 💎 NZT)
+  // 4. Выполнение Ежедневного задания (+100 XP, каждые 3 задания = +150 💰 OnPul Coins)
   const handleCompleteDailyTask = (dayNumber: number) => {
     const alreadyDone = gameState.completedDailyTasks.includes(dayNumber);
     const xpReward = alreadyDone
@@ -280,13 +298,13 @@ export function App() {
       const nextCompleted = alreadyDone
         ? prev.completedDailyTasks
         : [...prev.completedDailyTasks, dayNumber];
-      const earnedGem =
-        !alreadyDone && nextCompleted.length % 3 === 0 ? 1 : 0;
+      const earnedCoinsBonus =
+        !alreadyDone && nextCompleted.length % 3 === 0 ? 150 : 0;
 
       return {
         ...prev,
         streak: alreadyDone ? prev.streak : prev.streak + 1,
-        nztGems: prev.nztGems + earnedGem,
+        onpulCoins: prev.onpulCoins + earnedCoinsBonus,
         completedDailyTasks: nextCompleted,
       };
     });
@@ -335,36 +353,36 @@ export function App() {
     }));
   };
 
-  // 7. Приглашение друга по Win-Win программе (+50 XP + 1 💎 NZT)
+  // 7. Приглашение друга по Win-Win программе (+50 XP + 300 💰 OnPul Coins)
   const handleInviteFriend = () => {
     updateStateWithXp(
       LIMITLESS_XP_REWARDS.INVITE_FRIEND,
       (prev) => ({
         ...prev,
         invitedFriendsCount: prev.invitedFriendsCount + 1,
-        nztGems: prev.nztGems + 1,
+        onpulCoins: prev.onpulCoins + 300,
       }),
       true
     );
   };
 
-  // 7b. Активация инвайт-кода друга (бонус приглашённого: +100 XP + 1 💎 NZT + Щит Стрика)
+  // 7b. Активация инвайт-кода друга (бонус приглашённого: +100 XP + 300 💰 OnPul Coins + Щит Стрика)
   const handleClaimFriendInviteCode = (_code: string) => {
     const xpReward = gameState.referralWelcomeClaimed ? 0 : 100;
-    const gemReward = gameState.referralWelcomeClaimed ? 0 : 1;
+    const coinReward = gameState.referralWelcomeClaimed ? 0 : 300;
     updateStateWithXp(
       xpReward,
       (prev) => ({
         ...prev,
         referralWelcomeClaimed: true,
         streakShieldActive: true,
-        nztGems: prev.nztGems + gemReward,
+        onpulCoins: prev.onpulCoins + coinReward,
       }),
       true
     );
   };
 
-  // 8. Квесты профиля: @username (+25 XP), Email (+30 XP), KYC (+80 XP + 1 💎 NZT)
+  // 8. Квесты профиля: @username (+25 XP), Email (+30 XP), KYC (+80 XP + 300 💰 OnPul Coins)
   const handleClaimUsername = (username: string) => {
     const xpReward = gameState.profileQuests.usernameClaimed
       ? 0
@@ -408,13 +426,13 @@ export function App() {
   ) => {
     const alreadyClaimed = gameState.profileQuests.kycClaimed;
     const xpReward = alreadyClaimed ? 0 : LIMITLESS_XP_REWARDS.CLAIM_KYC;
-    const gemReward = alreadyClaimed ? 0 : 1;
+    const coinReward = alreadyClaimed ? 0 : 300;
 
     updateStateWithXp(
       xpReward,
       (prev) => ({
         ...prev,
-        nztGems: prev.nztGems + gemReward,
+        onpulCoins: prev.onpulCoins + coinReward,
         profileQuests: {
           ...prev.profileQuests,
           kycFullName: fullName,
@@ -459,22 +477,42 @@ export function App() {
     }));
   };
 
-  // 9b. Нейро-Блиц (Ежедневная PvP-дуэль): верный ход Сверхчеловека (+30 XP, +30 🏆, +200 💰, +1 💎 NZT при победе над соперником) или урок (+10 XP)
-  const handlePlayBlitzCard = (isSuperhumanMove: boolean) => {
+  // 9b. Нейро-Блиц (Ежедневная PvP-дуэль 5 вопросов): победа в PvP приносит +30 XP, +30 🏆, +200 💰, +1 💎 NZT, Скин и Совет
+  const handlePlayBlitzCard = (
+    isSuperhumanMove: boolean,
+    unlockedSkinId?: string,
+    unlockedTipId?: string
+  ) => {
     if (isSuperhumanMove) {
       updateStateWithXp(
         30,
         (prev) => {
           const nextTrophies = prev.arenaTrophies + 30;
-          const justDefeatedRival =
-            prev.arenaTrophies < prev.rivalTrophies &&
-            nextTrophies >= prev.rivalTrophies;
+          const nextEnergy = Math.max(0, prev.pvpEnergy - 1);
+          const nextSkins =
+            unlockedSkinId && !prev.unlockedSkins.includes(unlockedSkinId)
+              ? [...prev.unlockedSkins, unlockedSkinId]
+              : prev.unlockedSkins;
+          const nextTips =
+            unlockedTipId && !prev.unlockedTips.includes(unlockedTipId)
+              ? [...prev.unlockedTips, unlockedTipId]
+              : prev.unlockedTips;
+
           return {
             ...prev,
             arenaTrophies: nextTrophies,
             onpulCoins: prev.onpulCoins + 200,
-            nztGems: prev.nztGems + (justDefeatedRival ? 1 : 0),
+            nztGems: prev.nztGems + 1,
             blitzCardsPlayedToday: prev.blitzCardsPlayedToday + 1,
+            pvpBattlesPlayed: prev.pvpBattlesPlayed + 1,
+            pvpChestProgress: Math.min(10, prev.pvpChestProgress + 1),
+            pvpEnergy: nextEnergy,
+            pvpCooldownUntil:
+              nextEnergy === 0
+                ? Date.now() + 3 * 3600 * 1000
+                : Date.now() + 1 * 3600 * 1000,
+            unlockedSkins: nextSkins,
+            unlockedTips: nextTips,
           };
         },
         true
@@ -482,13 +520,71 @@ export function App() {
     } else {
       updateStateWithXp(
         10,
-        (prev) => ({
-          ...prev,
-          blitzCardsPlayedToday: prev.blitzCardsPlayedToday + 1,
-        }),
+        (prev) => {
+          const nextEnergy = Math.max(0, prev.pvpEnergy - 1);
+          return {
+            ...prev,
+            blitzCardsPlayedToday: prev.blitzCardsPlayedToday + 1,
+            pvpBattlesPlayed: prev.pvpBattlesPlayed + 1,
+            pvpChestProgress: Math.min(10, prev.pvpChestProgress + 1),
+            pvpEnergy: nextEnergy,
+            pvpCooldownUntil:
+              nextEnergy === 0
+                ? Date.now() + 3 * 3600 * 1000
+                : Date.now() + 1 * 3600 * 1000,
+          };
+        },
         true
       );
     }
+  };
+
+  // 9b-2. Мгновенный сброс кулдауна PvP-Энергии (⚡ 3/3) за 250 💰 Coins или 1 💎 NZT
+  const handleRefillEnergyWithCoins = () => {
+    setGameState((prev) => ({
+      ...prev,
+      onpulCoins: Math.max(0, prev.onpulCoins - 250),
+      pvpEnergy: 3,
+      pvpCooldownUntil: null,
+    }));
+  };
+
+  const handleRefillEnergyWithNzt = () => {
+    setGameState((prev) => ({
+      ...prev,
+      nztGems: Math.max(0, prev.nztGems - 1),
+      pvpEnergy: 3,
+      pvpCooldownUntil: null,
+    }));
+  };
+
+  // 9b-3. Экипировка выбитого в PvP скина персонажа
+  const handleEquipSkin = (skinId: string) => {
+    setGameState((prev) => ({
+      ...prev,
+      unlockedSkins: prev.unlockedSkins.includes(skinId)
+        ? prev.unlockedSkins
+        : [...prev.unlockedSkins, skinId],
+      equippedSkin: skinId,
+    }));
+  };
+
+  // 9b-4. Открытие Мега-Сундука за 10 PvP-боёв (+100 XP, +2 💎 NZT, +500 💰 Coins, Мифический Скин)
+  const handleOpenChestReward = () => {
+    updateStateWithXp(
+      100,
+      (prev) => ({
+        ...prev,
+        nztGems: prev.nztGems + 2,
+        onpulCoins: prev.onpulCoins + 500,
+        pvpChestProgress: 0,
+        unlockedSkins: prev.unlockedSkins.includes('golden_emperor')
+          ? prev.unlockedSkins
+          : [...prev.unlockedSkins, 'golden_emperor'],
+        equippedSkin: 'golden_emperor',
+      }),
+      true
+    );
   };
 
   // 9c. Сбор накопленных дивидендов из Нейро-Сейфа (+20 XP и перевод монет на баланс)
@@ -521,7 +617,7 @@ export function App() {
     );
   };
 
-  // 9e. Обменник выгод: Промо-Буст +2% Niyat Application (200 💰 Coins → промокод ONPUL-NIYAT-38 и +50 XP)
+  // 9e. Обменник выгод: Золотой Промо-Код Участника Розыгрыша Призов OnPul (200 💰 Coins → промокод ONPUL-VIP-2026 и +50 XP)
   const handleRedeemNiyatBoost = () => {
     const xpReward = gameState.niyatBoostRedeemed ? 0 : 50;
     updateStateWithXp(
@@ -804,7 +900,7 @@ export function App() {
         onAddGoalOrDebt={handleAddGoalOrDebt}
       />
 
-      {/* МОДАЛКА ПАРТНЁРСКОЙ ПРОГРАММЫ WIN-WIN (+50 XP + 1 💎 NZT / КОД ДРУГА +100 XP) */}
+      {/* МОДАЛКА ПАРТНЁРСКОЙ ПРОГРАММЫ WIN-WIN (+50 XP + 300 💰 Coins / КОД ДРУГА +100 XP) */}
       <FriendsModal
         isOpen={isFriendsModalOpen}
         onClose={() => setIsFriendsModalOpen(false)}
@@ -824,12 +920,16 @@ export function App() {
         onBuyVipAura={handleBuyVipAura}
       />
 
-      {/* МОДАЛКА «⚡ НЕЙРО-БЛИЦ: СДЕЛКА ИЛИ ЛОВУШКА?» (ЕЖЕДНЕВНОЕ СОРЕВНОВАНИЕ) */}
+      {/* МОДАЛКА «⚔️ PVP-АРЕНА: 5 ВОПРОСОВ НА СКОРОСТЬ» */}
       <NeuroBlitzModal
         isOpen={isBlitzModalOpen}
         onClose={() => setIsBlitzModalOpen(false)}
         state={gameState}
         onPlayBlitzCard={handlePlayBlitzCard}
+        onRefillEnergyWithCoins={handleRefillEnergyWithCoins}
+        onRefillEnergyWithNzt={handleRefillEnergyWithNzt}
+        onEquipSkin={handleEquipSkin}
+        onOpenChestReward={handleOpenChestReward}
       />
 
       {/* МОДАЛКА «💰 НЕЙРО-СЕЙФ, ВЫГОДЫ И PRO-МОНЕТИЗАЦИЯ» */}

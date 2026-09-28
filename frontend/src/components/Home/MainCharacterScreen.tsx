@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CHARACTER_PROFILES } from '../../data/limitlessContent';
+import { PVP_CHARACTER_SKINS } from '../../data/pvpQuestions';
 import {
   LimitlessGameState,
   calculateSafePaydayMetrics,
@@ -275,12 +276,29 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
           }`}
         >
           {/* Бейдж суперсилы сверху */}
-          <div className="inline-flex items-center gap-1 bg-gradient-to-r from-emerald-50 to-sky-50 border border-emerald-200 text-emerald-800 text-[10px] font-black px-2.5 py-0.5 rounded-full mb-2">
+          <div className="inline-flex items-center gap-1 bg-gradient-to-r from-emerald-50 to-sky-50 border border-emerald-200 text-emerald-800 text-[10px] font-black px-2.5 py-0.5 rounded-full mb-1.5">
             <span>{state.vipAuraUnlocked ? '👑' : '⚡'}</span>
             <span data-testid="character-superpower-badge">
               {profile.superpowerBadge}
             </span>
           </div>
+
+          {/* Надетый PvP-Скин героя (если выбит и надет) */}
+          {state.equippedSkin && state.equippedSkin !== 'default' && (
+            <div
+              data-testid="equipped-skin-badge"
+              className="inline-flex items-center gap-1 bg-indigo-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full mb-1.5"
+            >
+              <span>
+                {PVP_CHARACTER_SKINS.find((s) => s.id === state.equippedSkin)
+                  ?.icon || '🧥'}
+              </span>
+              <span>
+                {PVP_CHARACTER_SKINS.find((s) => s.id === state.equippedSkin)
+                  ?.title || 'PvP-Скин'}
+              </span>
+            </div>
+          )}
 
           {/* Иллюстрация персонажа */}
           <div className="relative w-full aspect-[4/5] max-h-[235px] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 mb-2">
@@ -332,7 +350,7 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
             <div className="w-[52px] h-[52px] rounded-full bg-white border-2 border-emerald-400 shadow-md flex flex-col items-center justify-center group-active:scale-90 transition-transform">
               <span className="text-lg leading-none">🤝</span>
               <span className="text-[8px] font-black text-emerald-700 mt-0.5">
-                +1 💎
+                +300 💰
               </span>
             </div>
             <span className="text-[10px] font-extrabold text-slate-700 mt-1 leading-tight text-center">
@@ -384,17 +402,17 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
         </div>
       </div>
 
-      {/* 4A. КАРТОЧКА «⚔️ НЕЙРО-БЛИЦ: ДУЭЛЬ ДНЯ» (ЕЖЕДНЕВНОЕ СОРЕВНОВАНИЕ ЗА 30 СЕК) */}
+      {/* 4A. КАРТОЧКА «⚔️ СЕТЕВОЙ PVP-БОЙ (5 ВОПРОСОВ НА СКОРОСТЬ)» */}
       <div
         data-testid="daily-blitz-banner"
         className="bg-gradient-to-r from-amber-50 via-orange-50/80 to-rose-50 rounded-3xl p-3.5 border-2 border-amber-400/90 shadow-soft"
       >
-        <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center justify-between gap-2 mb-1.5">
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="text-base shrink-0">⚔️</span>
             <div className="min-w-0">
               <div className="text-xs font-black text-slate-900 truncate">
-                Нейро-Блиц: Дуэль Дня (PvP)
+                PvP-Арена Онлайн: 5 Вопросов на Скорость
               </div>
               <div className="text-[11px] font-bold text-slate-700 truncate">
                 ⚔️ Соперник дня: Сардор ({state.rivalTrophies} 🏆) • Твои кубки:{' '}
@@ -414,6 +432,12 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
           )}
         </div>
 
+        <div className="flex items-center justify-between text-[10px] font-extrabold text-slate-700 mb-2 bg-white/70 rounded-xl px-2.5 py-1 border border-amber-200/80">
+          <span>⚡ Энергия: {state.pvpEnergy}/3 (КД 3ч)</span>
+          <span>🎁 Сундук: {state.pvpChestProgress}/10</span>
+          <span className="text-indigo-700">💎 NZT + 🧥 Скины в PvP!</span>
+        </div>
+
         <button
           type="button"
           data-testid="open-blitz-btn"
@@ -423,9 +447,9 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
           }}
           className="w-full py-2.5 px-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white font-black text-xs shadow-md flex items-center justify-between transition-all active:scale-[0.99]"
         >
-          <span>⚡ Играть Блиц (Сделка или Ловушка)</span>
+          <span>⚔️ Войти в PvP-Бой (5 вопросов • 6 языков)</span>
           <span className="bg-white/20 px-2 py-0.5 rounded-full text-[10px]">
-            +30 🏆 • +200 💰
+            +1 💎 NZT • +30 🏆
           </span>
         </button>
       </div>

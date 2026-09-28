@@ -292,7 +292,7 @@ export const SettingsAndKycScreen: React.FC<SettingsAndKycScreenProps> = ({
         </div>
       </div>
 
-      {/* 3. KYC ВЕРИФИКАЦИЯ ПРОФИЛЯ (+80 XP + 1 💎 NZT) */}
+      {/* 3. KYC ВЕРИФИКАЦИЯ ПРОФИЛЯ (+80 XP + 300 💰) */}
       <div className="bg-white rounded-3xl p-4 border-2 border-indigo-500/40 shadow-soft">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
@@ -302,7 +302,7 @@ export const SettingsAndKycScreen: React.FC<SettingsAndKycScreenProps> = ({
                 KYC Верификация профиля
               </div>
               <div className="text-[10px] text-slate-500">
-                Даёт +80 XP и +1 редкий 💎 NZT-Кристалл Ясности!
+                Даёт +80 XP и +300 💰 OnPul Coins в Нейро-Сейф!
               </div>
             </div>
           </div>
@@ -314,8 +314,8 @@ export const SettingsAndKycScreen: React.FC<SettingsAndKycScreenProps> = ({
             }`}
           >
             {state.profileQuests.kycClaimed
-              ? 'KYC Пройден +80 XP + 1 💎 ✓'
-              : '+80 XP + 1 💎 NZT'}
+              ? 'KYC Пройден +80 XP + 300 💰 ✓'
+              : '+80 XP + 300 💰'}
           </span>
         </div>
 
@@ -387,8 +387,8 @@ export const SettingsAndKycScreen: React.FC<SettingsAndKycScreenProps> = ({
           }`}
         >
           {state.profileQuests.kycClaimed
-            ? '✓ KYC Верификация подтверждена (+80 XP) • +1 💎 NZT'
-            : '🛡️ Пройти KYC и получить +80 XP (+1 💎 NZT)'}
+            ? '✓ KYC Верификация подтверждена (+80 XP) • +300 💰'
+            : '🛡️ Пройти KYC и получить +80 XP (+300 💰 Coins)'}
         </button>
       </div>
 

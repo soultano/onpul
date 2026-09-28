@@ -164,15 +164,15 @@ export const VaultAndMonetizationModal: React.FC<
               </h4>
             </div>
 
-            {/* Награда А: Промо-Буст +2% Niyat Application */}
+            {/* Награда А: Золотой Промо-Код Участника Розыгрыша Призов OnPul */}
             <div className="bg-white rounded-xl p-3 border border-amber-200 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="text-xs font-black text-slate-900">
-                    📈 Промо-Буст +2% к целевым сбережениям Niyat Application (36% → 38% годовых)
+                    🎁 Золотой Промо-Код Участника Розыгрыша Призов OnPul (ONPUL-VIP-2026)
                   </div>
                   <p className="text-[11px] text-slate-600 mt-0.5">
-                    Реальная финтех-привилегия для твоих накоплений у партнёров + мгновенно <strong>+50 XP</strong>!
+                    Даёт VIP-доступ к закрытому розыгрышу подарков и мерча образовательной платформы OnPul + мгновенно <strong>+50 XP</strong>!
                   </p>
                 </div>
                 <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-1 rounded-lg shrink-0">
@@ -185,7 +185,7 @@ export const VaultAndMonetizationModal: React.FC<
                   data-testid="niyat-promo-code"
                   className="bg-emerald-50 border border-emerald-400 text-emerald-900 rounded-xl px-3 py-2 text-xs font-black flex items-center justify-between"
                 >
-                  <span>Промокод: ONPUL-NIYAT-38</span>
+                  <span>Промокод: ONPUL-VIP-2026</span>
                   <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full">
                     Активирован ✓
                   </span>
@@ -206,8 +206,8 @@ export const VaultAndMonetizationModal: React.FC<
                 }`}
               >
                 {state.niyatBoostRedeemed
-                  ? '✓ Промокод ONPUL-NIYAT-38 получен (+50 XP)'
-                  : '🎁 Получить Буст +2% Niyat (200 💰 Coins → +50 XP)'}
+                  ? '✓ Промокод ONPUL-VIP-2026 получен (+50 XP)'
+                  : '🎁 Получить Золотой Промо-Код OnPul (200 💰 Coins → +50 XP)'}
               </button>
             </div>
 

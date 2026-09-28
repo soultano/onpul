@@ -449,10 +449,10 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
           </div>
           <ul className="text-[11px] font-semibold text-slate-700 space-y-1">
             <li>
-              • <strong className="text-emerald-700">+50 XP</strong> сразу за каждого приглашённого друга;
+              • <strong className="text-emerald-700">+50 XP и +300 💰 OnPul Coins</strong> сразу за каждого приглашённого друга;
             </li>
             <li>
-              • <strong className="text-emerald-700">+150 XP + 1 💎 NZT-Кристалл</strong> когда друг проходит базовую настройку / KYC;
+              • <strong className="text-emerald-700">+150 XP и +500 💰 Coins</strong> когда друг проходит базовую настройку / KYC;
             </li>
             <li>
               • <strong className="text-emerald-700">+10% пассивного XP</strong> от ежедневной дисциплины друзей + партнёрские статусы (<em>Проводник → Амбассадор → Партнёр Синдиката</em>).
@@ -473,7 +473,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
               • <strong className="text-sky-700">Стартовый буст «Быстрый старт»: +100 XP</strong> сразу при входе по твоей ссылке (мгновенный 2-й уровень!);
             </li>
             <li>
-              • <strong className="text-sky-700">+1 редкий 💎 NZT-Кристалл</strong> на баланс для активации супер-фич в Лаборатории NZT;
+              • <strong className="text-sky-700">+300 💰 OnPul Coins</strong> в Нейро-Сейф для прокачки и участия в розыгрышах;
             </li>
             <li>
               • <strong className="text-sky-700">Крио-Щит Стрика на 3 дня</strong> для защиты ударного режима.
@@ -503,17 +503,17 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
           className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs shadow-lg shadow-emerald-600/25 transition-all mb-4"
         >
           {copied
-            ? '✓ Ссылка скопирована! (+50 XP и +1 💎 NZT начислено)'
-            : '🤝 Пригласить друга / Скопировать ссылку (+50 XP + 1 💎 NZT)'}
+            ? '✓ Ссылка скопирована! (+50 XP и +300 💰 Coins начислено)'
+            : '🤝 Пригласить друга / Скопировать ссылку (+50 XP + 300 💰)'}
         </button>
 
-        {/* АКТИВАЦИЯ ИНВАЙТ-КОДА ДРУГА (НАГРАДА ПРИГЛАШЁННОГО: +100 XP + 1 💎 NZT) */}
+        {/* АКТИВАЦИЯ ИНВАЙТ-КОДА ДРУГА (НАГРАДА ПРИГЛАШЁННОГО: +100 XP + 300 💰) */}
         <div className="pt-3 border-t border-slate-200">
           <div className="text-xs font-black text-slate-900 mb-1">
             🎟️ Пришёл от друга? Активируй инвайт-код!
           </div>
           <p className="text-[11px] text-slate-500 mb-2">
-            Введи код друга и забери приветственный пакет «Быстрый старт»: <strong>+100 XP</strong>, <strong>+1 💎 NZT</strong> и Крио-Щит!
+            Введи код друга и забери приветственный пакет «Быстрый старт»: <strong>+100 XP</strong>, <strong>+300 💰 Coins</strong> и Крио-Щит!
           </p>
           <div className="flex gap-2">
             <input
@@ -536,7 +536,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
             >
               {state.referralWelcomeClaimed
                 ? 'Бонус получен (+100 XP ✓)'
-                : 'Активировать (+100 XP + 1 💎)'}
+                : 'Активировать (+100 XP + 300 💰)'}
             </button>
           </div>
         </div>
@@ -589,7 +589,7 @@ export const NztLabModal: React.FC<NztLabModalProps> = ({
         <div className="flex items-center justify-between mb-3">
           <div>
             <div className="inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-black px-2.5 py-0.5 rounded-full mb-1">
-              <span>💎 Редкая валюта Сверхчеловека</span>
+              <span>💎 Редкая валюта Сверхчеловека (Эксклюзив PvP)</span>
             </div>
             <h3 className="text-base font-black text-slate-900">
               {t.nztLabTitle}
@@ -619,7 +619,7 @@ export const NztLabModal: React.FC<NztLabModalProps> = ({
             </span>
           </div>
           <div className="text-[11px] text-indigo-100 leading-snug">
-            <strong>Почему 💎 NZT сложно добыть:</strong> кристаллы выдаются только за реальные рубежи: прохождение KYC (<strong>+1 💎</strong>), партнёрский инвайт друга Win-Win (<strong>+1 💎</strong>) и выполнение 3 ежедневных заданий (<strong>+1 💎</strong>).
+            <strong>Эксклюзивный фарм только в PvP:</strong> кристаллы 💎 NZT больше не выдаются за обычные квесты — их можно добыть <strong>ТОЛЬКО побеждая в живых PvP-боях на скорость (+1 💎 NZT)</strong> и открывая <strong>Мега-Сундук за 10 боёв (+3 💎 NZT)</strong>!
           </div>
         </div>
 

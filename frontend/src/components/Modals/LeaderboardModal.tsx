@@ -153,7 +153,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
           </div>
           <div className="space-y-0.5 text-[10px] font-bold text-slate-700">
             <div>
-              🥇 <strong className="text-slate-900">1 место:</strong> 50 💎 NZT + 10 000 💰 + Статус PRO и Купон +2%
+              🥇 <strong className="text-slate-900">1 место:</strong> 50 💎 NZT + 10 000 💰 + Статус PRO и Золотой Билет OnPul
             </div>
             <div>
               🥈 <strong className="text-slate-900">2 место:</strong> 30 💎 NZT + 5 000 💰 + VIP-Аура
