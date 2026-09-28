@@ -320,6 +320,12 @@ test.describe('OnPul «ФинУровень» (Limitless Edition) — Компл
     await page.getByTestId('nav-character-main').click();
     await expect(page.getByTestId('main-character-screen')).toBeVisible();
 
+    // Проверяем, что за KYC начислены +300 💰 Coins (400 + 300 = 700 💰), а 💎 NZT остаётся 0 (фармится только в PvP)
+    await expect(page.getByTestId('hud-onpul-coins')).toContainText(
+      '700 💰 Coins'
+    );
+    await expect(page.getByTestId('hud-nzt-currency')).toHaveText('0 NZT');
+
     // Проверяем смену иллюстрации героя на главном экране на женский образ Алии Морра
     await expect(page.getByTestId('main-character-image')).toHaveAttribute(
       'src',
@@ -335,7 +341,7 @@ test.describe('OnPul «ФинУровень» (Limitless Edition) — Компл
     );
   });
 
-  test('Тест 5: Мультиязычность (6 языков), отдельный F.A.Q. в Настройках, Двусторонняя рефералка Win-Win, Выпадающее меню целей и Лаборатория валюты 💎 NZT', async ({
+  test('Тест 5: Мультиязычность (6 языков), отдельный F.A.Q. в Настройках, Двусторонняя рефералка Win-Win (+Coins без NZT), Выпадающее меню целей и Лаборатория валюты 💎 NZT (фарм только в PvP)', async ({
     page,
   }) => {
     await completeOnboardingAndTutorial(page, 'male', 'Тимур');
@@ -378,14 +384,20 @@ test.describe('OnPul «ФинУровень» (Limitless Edition) — Компл
     await expect(page.getByTestId('faq-item-3')).toBeVisible();
     await expect(page.getByTestId('faq-item-4')).toBeVisible();
 
-    // 3. Возврат на главный экран и проверка Двусторонней реферальной программы (Win-Win)
+    // 3. Возврат на главный экран и проверка Двусторонней реферальной программы (Win-Win: +XP и +300 💰 Coins, 0 NZT)
     await page.getByTestId('nav-character-main').click();
     await page.getByTestId('orb-friends').click();
     await expect(page.getByTestId('friends-modal')).toBeVisible();
 
-    // Проверяем карточки наград Приглашающего и Приглашённого друга
+    // Проверяем карточки наград Приглашающего и Приглашённого друга (+300 💰 Coins)
     await expect(page.getByTestId('referral-inviter-rewards')).toBeVisible();
+    await expect(page.getByTestId('referral-inviter-rewards')).toContainText(
+      '+300 💰'
+    );
     await expect(page.getByTestId('referral-friend-rewards')).toBeVisible();
+    await expect(page.getByTestId('referral-friend-rewards')).toContainText(
+      '+300 💰'
+    );
 
     // Приглашаем друга (+50 XP и +300 💰 Coins)
     await page.getByTestId('invite-friend-btn').click();
@@ -397,11 +409,16 @@ test.describe('OnPul «ФинУровень» (Limitless Edition) — Компл
     );
     await page.getByTestId('close-friends-modal-btn').click();
 
-    // Проверяем, что начислено 400 + 300 + 300 = 1000 💰 Coins и 25 + 50 + 100 = 175 XP (Уровень 3)
+    // Проверяем, что начислено 400 + 300 + 300 = 1000 💰 Coins и 25 + 50 + 100 = 175 XP (Уровень 3), но 💎 NZT = 0 (фармится ТОЛЬКО в PvP)
     await expect(page.getByTestId('hud-onpul-coins')).toContainText(
       '1000 💰 Coins'
     );
+    await expect(page.getByTestId('hud-nzt-currency')).toHaveText('0 NZT');
     await expect(page.getByTestId('hud-level')).toHaveText('Уровень 3');
+
+    // Проверяем полное отсутствие упоминаний Niyat на экране
+    const bodyText = await page.locator('body').innerText();
+    expect(bodyText).not.toMatch(/niyat/i);
 
     // 4. Проверка выпадающего меню целей (Автомобиль, Квартира, Путешествие)
     await page.getByTestId('nav-finance-tasks').click();
@@ -465,8 +482,9 @@ test.describe('OnPul «ФинУровень» (Limitless Edition) — Компл
     await expect(page.getByTestId('hud-nzt-currency')).toHaveText('2 NZT');
   });
 
-  test('Тест 6: Живая 1v1 PvP-Арена (5 вопросов на скорость на 6 языках), Энергия ⚡ 3/3, Скины, Мега-Сундук за 10 боёв, Нейро-Сейф и PRO-Монетизация', async ({
+  test('Тест 6: Живая 1v1 PvP-Арена (5 вопросов на скорость, Мультиплеер в 2 вкладках), Энергия ⚡ 3/3 -> 2/3 -> Сброс КД, Скины, Мега-Сундук за 10 боёв, Нейро-Сейф и PRO-Монетизация', async ({
     page,
+    context,
   }) => {
     await completeOnboardingAndTutorial(page, 'male', 'Тимур');
 
@@ -492,26 +510,90 @@ test.describe('OnPul «ФинУровень» (Limitless Edition) — Компл
     await expect(page.getByTestId('pvp-energy-badge')).toContainText('3 / 3');
     await expect(page.getByTestId('pvp-chest-widget')).toBeVisible();
     await expect(page.getByTestId('pvp-chest-counter')).toContainText(
-      '9 / 10 боёв'
+      '9 / 10'
     );
 
-    // Выбираем правильный ход Сверхчеловека (Вариант А)
+    // 3a. Проверка живого онлайн-матчмейкинга (find-pvp-match-btn) между 2 параллельными страницами браузера
+    const page2 = await context.newPage();
+    await page2.route('**/api/**', async (route) => {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true }),
+      });
+    });
+    await page2.goto('/');
+    await expect(page2.getByTestId('main-character-screen')).toBeVisible();
+    await page2.getByTestId('open-blitz-btn').click();
+    await expect(page2.getByTestId('neuro-blitz-modal')).toBeVisible();
+
+    // Оба игрока нажимают «Искать соперника онлайн (PvP)»
+    await page.getByTestId('find-pvp-match-btn').click();
+    await page2.getByTestId('find-pvp-match-btn').click();
+
+    // Убеждаемся, что оба игрока соединились в одной живой комнате и видят статус подключения
+    await expect(page.getByTestId('neuro-blitz-modal')).toContainText(
+      '🟢 ЖИВОЙ СОПЕРНИК ПОДКЛЮЧЁН:'
+    );
+    await expect(page2.getByTestId('neuro-blitz-modal')).toContainText(
+      '🟢 ЖИВОЙ СОПЕРНИК ПОДКЛЮЧЁН:'
+    );
+
+    // Убеждаемся, что оба игрока получили одинаковую серию из 5 вопросов (Вопрос 1 из 5 идентичен)
+    await expect(page.getByTestId('neuro-blitz-modal')).toContainText(
+      'Вопрос 1 из 5'
+    );
+    await expect(page2.getByTestId('neuro-blitz-modal')).toContainText(
+      'Вопрос 1 из 5'
+    );
+    const q1TextPlayer1 = await page
+      .getByTestId('pvp-question-text')
+      .innerText();
+    const q1TextPlayer2 = await page2
+      .getByTestId('pvp-question-text')
+      .innerText();
+    expect(q1TextPlayer1).toBeTruthy();
+    expect(q1TextPlayer1).toEqual(q1TextPlayer2);
+
+    // Первый игрок отвечает на PvP-вопрос (Вариант А)
     await page.getByTestId('blitz-option-a').click();
+
+    // Второй игрок в реальном времени получает сигнал ответа соперника (Счёт: 0 : 150)
+    await expect(page2.getByTestId('neuro-blitz-modal')).toContainText(
+      'Счёт: 0 : 150'
+    );
+    await page2.close();
+
+    // 3b. Проверяем списание 1 ед. энергии (2 / 3), результат раунда, +1 💎 NZT, дроп Скина и Финансового Совета
+    await expect(page.getByTestId('pvp-energy-badge')).toContainText('2 / 3');
     await expect(page.getByTestId('blitz-result-box')).toBeVisible();
     await expect(page.getByTestId('blitz-result-box')).toContainText(
       '+30 🏆 Кубков Лиги'
     );
-
-    // Проверяем победу над Соперником, выпадение +1 💎 NZT, Скина Персонажа и Финансового Совета
     await expect(page.getByTestId('blitz-duel-won-badge')).toBeVisible();
     await expect(page.getByTestId('pvp-skin-drop-badge')).toBeVisible();
     await expect(page.getByTestId('pvp-tip-drop-badge')).toBeVisible();
 
-    // Надеваем выбитый скин и открываем Мега-Сундук за 10-й бой (+2 💎 NZT, +500 💰, Мифический Скин)
+    // Надеваем выбитый скин персонажа
     await page.getByTestId('equip-skin-btn').click();
+    await expect(page.getByTestId('equip-skin-btn')).toContainText(
+      '✓ Скин надет'
+    );
+
+    // 3c. Проверка пополнения энергии PvP без ожидания 3 часов за 250 💰 Coins -> энергия снова 3 / 3
+    await page.getByTestId('refill-energy-coins-btn').click();
+    await expect(page.getByTestId('pvp-energy-badge')).toContainText('3 / 3');
+
+    // 3d. Открываем Мега-Сундук за 10-й бой (+2 💎 NZT, +500 💰, Мифический Скин)
+    await expect(page.getByTestId('pvp-chest-counter')).toContainText(
+      '10 / 10'
+    );
     await expect(page.getByTestId('open-pvp-chest-btn')).toBeVisible();
     await page.getByTestId('open-pvp-chest-btn').click();
     await expect(page.getByTestId('pvp-chest-reward-box')).toBeVisible();
+    await expect(page.getByTestId('pvp-chest-reward-box')).toContainText(
+      '+3 💎 NZT'
+    );
 
     // Закрытие окна Блица
     await page.getByTestId('close-blitz-modal-btn').click();
@@ -528,6 +610,10 @@ test.describe('OnPul «ФинУровень» (Limitless Edition) — Компл
     await expect(page.getByTestId('vault-current-level')).toHaveText(
       'Ур. 1/10'
     );
+
+    // Проверяем, что в модалке Сейфа нет ни одного упоминания Niyat
+    const vaultText = await vaultModal.innerText();
+    expect(vaultText).not.toMatch(/niyat/i);
 
     // Прокачка уровня Сейфа: Ур. 1/10 -> Ур. 2/10 (+40 XP)
     await page.getByTestId('upgrade-vault-btn').click();
