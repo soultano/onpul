@@ -18,7 +18,7 @@ export const CHARACTER_PROFILES: Record<CharacterGender, CharacterProfileMeta> =
     name: 'Тимур / Эдди Морра',
     defaultPlayerName: 'Тимур',
     archetype: 'Образ «Области тьмы» (Limitless)',
-    imageUrl: '/characters/eddie_limitless.jpg',
+    imageUrl: `${import.meta.env.BASE_URL}characters/eddie_limitless.jpg`,
     superpowerBadge: 'Гиперфокус Эдди Морра',
     superpowerShort: 'Взлом финансового тумана и 100% фокус',
     description:
@@ -36,7 +36,7 @@ export const CHARACTER_PROFILES: Record<CharacterGender, CharacterProfileMeta> =
     name: 'Алия Морра',
     defaultPlayerName: 'Алия',
     archetype: 'Образ «Ход королевы × Форс-мажоры × Limitless»',
-    imageUrl: '/characters/leyla_limitless.jpg',
+    imageUrl: `${import.meta.env.BASE_URL}characters/leyla_limitless.jpg`,
     superpowerBadge: 'Шахматное зрение Алии',
     superpowerShort: 'Шахматное зрение бюджета на 5 шагов вперёд',
     description:
