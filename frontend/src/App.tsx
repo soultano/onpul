@@ -11,6 +11,7 @@ import {
   STORAGE_KEY,
   createInitialGameState,
 } from './types/game';
+import { SupportedLanguage, TRANSLATIONS } from './i18n/translations';
 import { CHARACTER_PROFILES } from './data/limitlessContent';
 import { CharacterSelectScreen } from './components/Onboarding/CharacterSelectScreen';
 import { ArrowTutorialOverlay } from './components/Tutorial/ArrowTutorialOverlay';
@@ -21,21 +22,44 @@ import { LeaderboardModal } from './components/Modals/LeaderboardModal';
 import {
   FriendsModal,
   GoalsAndDebtsModal,
+  NztLabModal,
   PaydayModal,
 } from './components/Modals/QuickActionModals';
 import { LevelUpModal } from './components/LevelUpModal';
 
-function loadInitialState(defaultName?: string, defaultUsername?: string): LimitlessGameState {
+function loadInitialState(
+  defaultName?: string,
+  defaultUsername?: string
+): LimitlessGameState {
+  const base = createInitialGameState(defaultName, defaultUsername);
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object' && 'hasSelectedCharacter' in parsed) {
-        return parsed as LimitlessGameState;
+      if (
+        parsed &&
+        typeof parsed === 'object' &&
+        'hasSelectedCharacter' in parsed
+      ) {
+        return {
+          ...base,
+          ...parsed,
+          language: parsed.language || 'ru',
+          nztGems: typeof parsed.nztGems === 'number' ? parsed.nztGems : 0,
+          xpMultiplier:
+            typeof parsed.xpMultiplier === 'number' ? parsed.xpMultiplier : 1,
+          streakShieldActive: Boolean(parsed.streakShieldActive),
+          vipAuraUnlocked: Boolean(parsed.vipAuraUnlocked),
+          referralWelcomeClaimed: Boolean(parsed.referralWelcomeClaimed),
+          profileQuests: {
+            ...base.profileQuests,
+            ...(parsed.profileQuests || {}),
+          },
+        } as LimitlessGameState;
       }
     }
   } catch (e) {}
-  return createInitialGameState(defaultName, defaultUsername);
+  return base;
 }
 
 export function App() {
@@ -46,16 +70,19 @@ export function App() {
   );
 
   // Вкладки нижнего меню: 'finance' (слева) | 'character' (центр) | 'settings' (справа)
-  const [currentTab, setCurrentTab] = useState<'finance' | 'character' | 'settings'>('character');
+  const [currentTab, setCurrentTab] = useState<
+    'finance' | 'character' | 'settings'
+  >('character');
 
   // Пошаговый гид со стрелками (5 шагов)
   const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(false);
 
-  // Модальные окна кругляшков и лидерборда
+  // Модальные окна кругляшков, лидерборда и Лаборатории NZT
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState<boolean>(false);
   const [isPaydayModalOpen, setIsPaydayModalOpen] = useState<boolean>(false);
   const [isGoalsModalOpen, setIsGoalsModalOpen] = useState<boolean>(false);
   const [isFriendsModalOpen, setIsFriendsModalOpen] = useState<boolean>(false);
+  const [isNztLabOpen, setIsNztLabOpen] = useState<boolean>(false);
 
   // Тост XP и Модалка Level Up
   const [toastXp, setToastXp] = useState<number | null>(null);
@@ -91,17 +118,20 @@ export function App() {
   // Универсальная функция обновления состояния с проверкой повышения уровня
   const updateStateWithXp = useCallback(
     (
-      xpDelta: number,
-      updater: (prev: LimitlessGameState) => LimitlessGameState
+      baseXpDelta: number,
+      updater: (prev: LimitlessGameState) => LimitlessGameState,
+      ignoreMultiplier = false
     ) => {
       setGameState((prev) => {
         const oldLvl = calculateLevelAndProgress(prev.xp).level;
         const updated = updater(prev);
-        const finalXp = updated.xp + xpDelta;
+        const multiplier = ignoreMultiplier ? 1 : prev.xpMultiplier || 1;
+        const effectiveXpDelta = baseXpDelta * multiplier;
+        const finalXp = updated.xp + effectiveXpDelta;
         const newLvlInfo = calculateLevelAndProgress(finalXp);
 
-        if (xpDelta > 0) {
-          triggerXpToast(xpDelta);
+        if (effectiveXpDelta > 0) {
+          triggerXpToast(effectiveXpDelta);
         }
 
         if (newLvlInfo.level > oldLvl) {
@@ -121,6 +151,14 @@ export function App() {
     [triggerXpToast]
   );
 
+  // Смена языка (6 языков: ru, uz, en, de, ko, es)
+  const handleSelectLanguage = (lang: SupportedLanguage) => {
+    setGameState((prev) => ({
+      ...prev,
+      language: lang,
+    }));
+  };
+
   // 1. Выбор персонажа при первом входе
   const handleStartGame = (gender: CharacterGender, playerName: string) => {
     setGameState((prev) => ({
@@ -131,7 +169,9 @@ export function App() {
       profileQuests: {
         ...prev.profileQuests,
         kycFullName:
-          gender === 'female' ? `${playerName} Каримова` : `${playerName} Каримов`,
+          gender === 'female'
+            ? `${playerName} Каримова`
+            : `${playerName} Каримов`,
       },
     }));
     setCurrentTab('character');
@@ -144,11 +184,15 @@ export function App() {
     const reward = gameState.tutorialRewardClaimed
       ? 0
       : LIMITLESS_XP_REWARDS.TUTORIAL_COMPLETE;
-    updateStateWithXp(reward, (prev) => ({
-      ...prev,
-      tutorialCompleted: true,
-      tutorialRewardClaimed: true,
-    }));
+    updateStateWithXp(
+      reward,
+      (prev) => ({
+        ...prev,
+        tutorialCompleted: true,
+        tutorialRewardClaimed: true,
+      }),
+      true
+    );
   };
 
   const handleTutorialSkip = () => {
@@ -186,7 +230,7 @@ export function App() {
         categoryLabel,
         categoryIcon,
         createdAt: 'Только что',
-        xpEarned: xpReward,
+        xpEarned: xpReward * (prev.xpMultiplier || 1),
       };
 
       return {
@@ -197,20 +241,27 @@ export function App() {
     });
   };
 
-  // 4. Выполнение Ежедневного задания (+100 XP)
+  // 4. Выполнение Ежедневного задания (+100 XP, каждые 3 задания = +1 💎 NZT)
   const handleCompleteDailyTask = (dayNumber: number) => {
     const alreadyDone = gameState.completedDailyTasks.includes(dayNumber);
     const xpReward = alreadyDone
       ? 0
       : LIMITLESS_XP_REWARDS.COMPLETE_DAILY_TASK;
 
-    updateStateWithXp(xpReward, (prev) => ({
-      ...prev,
-      streak: alreadyDone ? prev.streak : prev.streak + 1,
-      completedDailyTasks: alreadyDone
+    updateStateWithXp(xpReward, (prev) => {
+      const nextCompleted = alreadyDone
         ? prev.completedDailyTasks
-        : [...prev.completedDailyTasks, dayNumber],
-    }));
+        : [...prev.completedDailyTasks, dayNumber];
+      const earnedGem =
+        !alreadyDone && nextCompleted.length % 3 === 0 ? 1 : 0;
+
+      return {
+        ...prev,
+        streak: alreadyDone ? prev.streak : prev.streak + 1,
+        nztGems: prev.nztGems + earnedGem,
+        completedDailyTasks: nextCompleted,
+      };
+    });
   };
 
   // 5. Добавление Цели или Обязательного платежа/Долга (+40 XP)
@@ -218,7 +269,8 @@ export function App() {
     kind: 'goal' | 'debt',
     title: string,
     amount: number,
-    dueDateOrTarget: string
+    dueDateOrTarget: string,
+    category?: string
   ) => {
     const xpReward = LIMITLESS_XP_REWARDS.ADD_GOAL_OR_DEBT;
     updateStateWithXp(xpReward, (prev) => ({
@@ -227,6 +279,7 @@ export function App() {
         {
           id: `gd-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
           kind,
+          category: category || (kind === 'goal' ? 'custom' : 'debt'),
           title,
           amount,
           dueDateOrTarget,
@@ -254,60 +307,131 @@ export function App() {
     }));
   };
 
-  // 7. Приглашение друга (+50 XP)
+  // 7. Приглашение друга по Win-Win программе (+50 XP + 1 💎 NZT)
   const handleInviteFriend = () => {
-    updateStateWithXp(LIMITLESS_XP_REWARDS.INVITE_FRIEND, (prev) => ({
-      ...prev,
-      invitedFriendsCount: prev.invitedFriendsCount + 1,
-    }));
+    updateStateWithXp(
+      LIMITLESS_XP_REWARDS.INVITE_FRIEND,
+      (prev) => ({
+        ...prev,
+        invitedFriendsCount: prev.invitedFriendsCount + 1,
+        nztGems: prev.nztGems + 1,
+      }),
+      true
+    );
   };
 
-  // 8. Квесты профиля: @username (+25 XP), Email (+30 XP), KYC (+80 XP)
+  // 7b. Активация инвайт-кода друга (бонус приглашённого: +100 XP + 1 💎 NZT + Щит Стрика)
+  const handleClaimFriendInviteCode = (_code: string) => {
+    const xpReward = gameState.referralWelcomeClaimed ? 0 : 100;
+    const gemReward = gameState.referralWelcomeClaimed ? 0 : 1;
+    updateStateWithXp(
+      xpReward,
+      (prev) => ({
+        ...prev,
+        referralWelcomeClaimed: true,
+        streakShieldActive: true,
+        nztGems: prev.nztGems + gemReward,
+      }),
+      true
+    );
+  };
+
+  // 8. Квесты профиля: @username (+25 XP), Email (+30 XP), KYC (+80 XP + 1 💎 NZT)
   const handleClaimUsername = (username: string) => {
     const xpReward = gameState.profileQuests.usernameClaimed
       ? 0
       : LIMITLESS_XP_REWARDS.CLAIM_USERNAME;
-    updateStateWithXp(xpReward, (prev) => ({
-      ...prev,
-      profileQuests: {
-        ...prev.profileQuests,
-        username: username.startsWith('@') ? username : `@${username}`,
-        usernameClaimed: true,
-      },
-    }));
+    updateStateWithXp(
+      xpReward,
+      (prev) => ({
+        ...prev,
+        profileQuests: {
+          ...prev.profileQuests,
+          username: username.startsWith('@') ? username : `@${username}`,
+          usernameClaimed: true,
+        },
+      }),
+      true
+    );
   };
 
   const handleClaimEmail = (email: string) => {
     const xpReward = gameState.profileQuests.emailClaimed
       ? 0
       : LIMITLESS_XP_REWARDS.CLAIM_EMAIL;
-    updateStateWithXp(xpReward, (prev) => ({
+    updateStateWithXp(
+      xpReward,
+      (prev) => ({
+        ...prev,
+        profileQuests: {
+          ...prev.profileQuests,
+          email,
+          emailClaimed: true,
+        },
+      }),
+      true
+    );
+  };
+
+  const handleClaimKyc = (
+    fullName: string,
+    city: string,
+    occupation: string
+  ) => {
+    const alreadyClaimed = gameState.profileQuests.kycClaimed;
+    const xpReward = alreadyClaimed ? 0 : LIMITLESS_XP_REWARDS.CLAIM_KYC;
+    const gemReward = alreadyClaimed ? 0 : 1;
+
+    updateStateWithXp(
+      xpReward,
+      (prev) => ({
+        ...prev,
+        nztGems: prev.nztGems + gemReward,
+        profileQuests: {
+          ...prev.profileQuests,
+          kycFullName: fullName,
+          kycCity: city,
+          kycOccupation: occupation,
+          kycClaimed: true,
+        },
+      }),
+      true
+    );
+  };
+
+  // 9. Лаборатория NZT: покупка супер-фич за редкие 💎 NZT-Кристаллы
+  const handleBuyNeuroBoost = () => {
+    if (gameState.nztGems < 1) return;
+    updateStateWithXp(
+      60,
+      (prev) => ({
+        ...prev,
+        nztGems: Math.max(0, prev.nztGems - 1),
+        xpMultiplier: 2,
+      }),
+      true
+    );
+  };
+
+  const handleBuyStreakShield = () => {
+    if (gameState.nztGems < 1) return;
+    setGameState((prev) => ({
       ...prev,
-      profileQuests: {
-        ...prev.profileQuests,
-        email,
-        emailClaimed: true,
-      },
+      nztGems: Math.max(0, prev.nztGems - 1),
+      streakShieldActive: true,
     }));
   };
 
-  const handleClaimKyc = (fullName: string, city: string, occupation: string) => {
-    const xpReward = gameState.profileQuests.kycClaimed
-      ? 0
-      : LIMITLESS_XP_REWARDS.CLAIM_KYC;
-    updateStateWithXp(xpReward, (prev) => ({
+  const handleBuyVipAura = () => {
+    if (gameState.nztGems < 2) return;
+    setGameState((prev) => ({
       ...prev,
-      profileQuests: {
-        ...prev.profileQuests,
-        kycFullName: fullName,
-        kycCity: city,
-        kycOccupation: occupation,
-        kycClaimed: true,
-      },
+      nztGems: Math.max(0, prev.nztGems - 2),
+      vipAuraUnlocked: true,
     }));
   };
 
-  // 9. Переключение пола персонажа в 1 клик
+  // 10. Переключение пола персонажа в 1 клик
   const handleSwitchGender = () => {
     setGameState((prev) => {
       const nextGender: CharacterGender =
@@ -326,7 +450,7 @@ export function App() {
     });
   };
 
-  // 10. Сброс демо-прогресса
+  // 11. Сброс демо-прогресса
   const handleResetProgress = () => {
     try {
       localStorage.removeItem(STORAGE_KEY);
@@ -341,13 +465,19 @@ export function App() {
     setIsPaydayModalOpen(false);
     setIsGoalsModalOpen(false);
     setIsFriendsModalOpen(false);
+    setIsNztLabOpen(false);
   };
+
+  const currentLang = gameState.language || 'ru';
+  const t = TRANSLATIONS[currentLang];
 
   // Если персонаж ещё не выбран — показываем стартовый экран выбора героя
   if (!gameState.hasSelectedCharacter) {
     return (
       <CharacterSelectScreen
         initialName={gameState.playerName}
+        currentLanguage={currentLang}
+        onSelectLanguage={handleSelectLanguage}
         onStartGame={handleStartGame}
       />
     );
@@ -382,10 +512,12 @@ export function App() {
           <MainCharacterScreen
             state={gameState}
             levelInfo={levelInfo}
+            onSelectLanguage={handleSelectLanguage}
             onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
             onOpenGoalsModal={() => setIsGoalsModalOpen(true)}
             onOpenPaydayModal={() => setIsPaydayModalOpen(true)}
             onOpenFriendsModal={() => setIsFriendsModalOpen(true)}
+            onOpenNztLab={() => setIsNztLabOpen(true)}
             onNavigateKyc={() => setCurrentTab('settings')}
             onNavigateFinance={() => setCurrentTab('finance')}
             onRestartTutorial={() => setIsTutorialOpen(true)}
@@ -396,6 +528,7 @@ export function App() {
           <SettingsAndKycScreen
             state={gameState}
             levelInfo={levelInfo}
+            onSelectLanguage={handleSelectLanguage}
             onClaimUsername={handleClaimUsername}
             onClaimEmail={handleClaimEmail}
             onClaimKyc={handleClaimKyc}
@@ -406,6 +539,8 @@ export function App() {
               setIsTutorialOpen(true);
             }}
             onResetProgress={handleResetProgress}
+            onOpenNztLab={() => setIsNztLabOpen(true)}
+            onOpenFriendsModal={() => setIsFriendsModalOpen(true)}
           />
         )}
       </main>
@@ -431,10 +566,10 @@ export function App() {
           }`}
         >
           <span className="text-lg leading-none">⚡</span>
-          <span className="text-[11px]">Учёт и Задания</span>
+          <span className="text-[11px]">{t.navFinance}</span>
         </button>
 
-        {/* 2. Кнопка По Центру (Большая круглая/выступающая кнопка): «Персонаж (Главный)» */}
+        {/* 2. Кнопка По Центру (Большая круглая/выступающая кнопка): «Персонаж» */}
         <div className="flex-1 flex justify-center">
           <button
             type="button"
@@ -447,7 +582,7 @@ export function App() {
             className="group -mt-6 flex flex-col items-center focus:outline-none"
           >
             <div
-              className={`w-15 h-15 w-[60px] h-[60px] rounded-full flex items-center justify-center border-4 transition-all shadow-lg ${
+              className={`w-[60px] h-[60px] rounded-full flex items-center justify-center border-4 transition-all shadow-lg ${
                 currentTab === 'character'
                   ? 'bg-gradient-to-tr from-emerald-600 to-sky-500 border-white scale-105 shadow-emerald-600/30'
                   : 'bg-white border-emerald-500 hover:scale-105'
@@ -466,12 +601,12 @@ export function App() {
                   : 'text-slate-600 font-bold'
               }`}
             >
-              Персонаж
+              {t.navCharacter}
             </span>
           </button>
         </div>
 
-        {/* 3. Кнопка Справа: «Настройки и KYC (+XP)» */}
+        {/* 3. Кнопка Справа: только «Настройки» */}
         <button
           type="button"
           data-testid="nav-settings-kyc"
@@ -486,8 +621,8 @@ export function App() {
               : 'text-slate-500 hover:text-slate-800 font-bold'
           }`}
         >
-          <span className="text-lg leading-none">🛡️</span>
-          <span className="text-[11px]">Настройки и KYC</span>
+          <span className="text-lg leading-none">⚙️</span>
+          <span className="text-[11px]">{t.navSettings}</span>
         </button>
       </nav>
 
@@ -517,20 +652,33 @@ export function App() {
         onSavePayday={handleSavePayday}
       />
 
-      {/* МОДАЛКА ЦЕЛЕЙ И ДОЛГОВ */}
+      {/* МОДАЛКА ЦЕЛЕЙ И ДОЛГОВ (С ВЫПАДАЮЩИМ МЕНЮ КАТЕГОРИЙ) */}
       <GoalsAndDebtsModal
         isOpen={isGoalsModalOpen}
         onClose={() => setIsGoalsModalOpen(false)}
+        state={gameState}
         goalsAndDebts={gameState.goalsAndDebts}
         onAddGoalOrDebt={handleAddGoalOrDebt}
       />
 
-      {/* МОДАЛКА ПРИГЛАШЕНИЯ ДРУЗЕЙ (+50 XP) */}
+      {/* МОДАЛКА ПАРТНЁРСКОЙ ПРОГРАММЫ WIN-WIN (+50 XP + 1 💎 NZT / КОД ДРУГА +100 XP) */}
       <FriendsModal
         isOpen={isFriendsModalOpen}
         onClose={() => setIsFriendsModalOpen(false)}
+        state={gameState}
         invitedCount={gameState.invitedFriendsCount}
         onInviteFriend={handleInviteFriend}
+        onClaimFriendInviteCode={handleClaimFriendInviteCode}
+      />
+
+      {/* МОДАЛКА ЛАБОРАТОРИИ NZT (РЕДКАЯ ВАЛЮТА 💎 NZT) */}
+      <NztLabModal
+        isOpen={isNztLabOpen}
+        onClose={() => setIsNztLabOpen(false)}
+        state={gameState}
+        onBuyNeuroBoost={handleBuyNeuroBoost}
+        onBuyStreakShield={handleBuyStreakShield}
+        onBuyVipAura={handleBuyVipAura}
       />
 
       {/* МОДАЛКА / БАННЕР ПОВЫШЕНИЯ УРОВНЯ (LEVEL UP!) */}

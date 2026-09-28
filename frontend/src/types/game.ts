@@ -1,3 +1,5 @@
+import { SupportedLanguage } from '../i18n/translations';
+
 export type CharacterGender = 'male' | 'female';
 
 export interface TransactionItem {
@@ -14,6 +16,7 @@ export interface TransactionItem {
 export interface GoalOrDebtItem {
   id: string;
   kind: 'goal' | 'debt';
+  category?: string;
   title: string;
   amount: number;
   dueDateOrTarget: string;
@@ -34,10 +37,16 @@ export interface ProfileQuestsState {
 
 export interface LimitlessGameState {
   hasSelectedCharacter: boolean;
+  language: SupportedLanguage;
   gender: CharacterGender;
   playerName: string;
   xp: number;
   streak: number;
+  nztGems: number; // 💎 NZT — Редкие Кристаллы Ясности
+  xpMultiplier: number; // 1 по умолчанию, 2 при активации Нейро-Импульса
+  streakShieldActive: boolean; // Крио-Щит Стрика
+  vipAuraUnlocked: boolean; // Золотая VIP-Аура
+  referralWelcomeClaimed: boolean; // Получен ли бонус приглашённого друга (+100 XP + 1 NZT)
   tutorialCompleted: boolean;
   tutorialRewardClaimed: boolean;
   balance: number; // Текущий баланс на картах/наличными (сум)
@@ -51,13 +60,22 @@ export interface LimitlessGameState {
 
 export const STORAGE_KEY = 'onpul_limitless_state_v1';
 
-export function createInitialGameState(defaultName = 'Тимур', defaultUsername = 'timur_limitless'): LimitlessGameState {
+export function createInitialGameState(
+  defaultName = 'Тимур',
+  defaultUsername = 'timur_limitless'
+): LimitlessGameState {
   return {
     hasSelectedCharacter: false,
+    language: 'ru',
     gender: 'male',
     playerName: defaultName,
     xp: 0,
     streak: 3,
+    nztGems: 0,
+    xpMultiplier: 1,
+    streakShieldActive: false,
+    vipAuraUnlocked: false,
+    referralWelcomeClaimed: false,
     tutorialCompleted: false,
     tutorialRewardClaimed: false,
     balance: 4500000,
@@ -88,6 +106,7 @@ export function createInitialGameState(defaultName = 'Тимур', defaultUserna
       {
         id: 'seed-debt-1',
         kind: 'debt',
+        category: 'debt',
         title: 'Интернет и Коммуналка (ЖКХ)',
         amount: 450000,
         dueDateOrTarget: 'До 10 числа',
@@ -96,6 +115,7 @@ export function createInitialGameState(defaultName = 'Тимур', defaultUserna
       {
         id: 'seed-goal-1',
         kind: 'goal',
+        category: 'cushion',
         title: 'Подушка безопасности (Резерв)',
         amount: 5000000,
         dueDateOrTarget: 'Цель: 3 месяца',
@@ -104,7 +124,9 @@ export function createInitialGameState(defaultName = 'Тимур', defaultUserna
     ],
     completedDailyTasks: [],
     profileQuests: {
-      username: defaultUsername ? `@${defaultUsername.replace(/^@/, '')}` : '@timur_limitless',
+      username: defaultUsername
+        ? `@${defaultUsername.replace(/^@/, '')}`
+        : '@timur_limitless',
       usernameClaimed: false,
       email: 'player@onpul.uz',
       emailClaimed: false,

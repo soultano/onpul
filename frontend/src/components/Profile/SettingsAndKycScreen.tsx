@@ -5,11 +5,14 @@ import {
 } from '../../data/limitlessContent';
 import { LimitlessGameState, formatUzs } from '../../types/game';
 import { LevelInfo, calculateReputationPoints } from '../../config/xp';
+import { SupportedLanguage, TRANSLATIONS } from '../../i18n/translations';
+import { LanguageSelector } from '../Common/LanguageSelector';
 import { useTelegram } from '../../hooks/useTelegram';
 
 interface SettingsAndKycScreenProps {
   state: LimitlessGameState;
   levelInfo: LevelInfo;
+  onSelectLanguage: (lang: SupportedLanguage) => void;
   onClaimUsername: (username: string) => void;
   onClaimEmail: (email: string) => void;
   onClaimKyc: (fullName: string, city: string, occupation: string) => void;
@@ -17,11 +20,14 @@ interface SettingsAndKycScreenProps {
   onSwitchGender: () => void;
   onRestartTutorial: () => void;
   onResetProgress: () => void;
+  onOpenNztLab: () => void;
+  onOpenFriendsModal: () => void;
 }
 
 export const SettingsAndKycScreen: React.FC<SettingsAndKycScreenProps> = ({
   state,
   levelInfo,
+  onSelectLanguage,
   onClaimUsername,
   onClaimEmail,
   onClaimKyc,
@@ -29,8 +35,14 @@ export const SettingsAndKycScreen: React.FC<SettingsAndKycScreenProps> = ({
   onSwitchGender,
   onRestartTutorial,
   onResetProgress,
+  onOpenNztLab,
+  onOpenFriendsModal,
 }) => {
   const { haptics } = useTelegram();
+  const lang = state.language || 'ru';
+  const t = TRANSLATIONS[lang];
+
+  const [isFaqOpen, setIsFaqOpen] = useState<boolean>(false);
 
   const [username, setUsername] = useState<string>(
     state.profileQuests.username || '@timur_limitless'
@@ -67,8 +79,19 @@ export const SettingsAndKycScreen: React.FC<SettingsAndKycScreenProps> = ({
   return (
     <div
       data-testid="settings-kyc-screen"
-      className="space-y-4 pb-28 animate-float-up"
+      className="space-y-3.5 pb-28 animate-float-up"
     >
+      {/* ВЫБОР ЯЗЫКА ИНТЕРФЕЙСА (6 ЯЗЫКОВ) */}
+      <div className="bg-white rounded-3xl p-3.5 border border-slate-200/90 shadow-soft">
+        <div className="text-xs font-black text-slate-800 mb-2 text-center">
+          🌍 Язык игры / Til / Language / Sprache / 언어 / Idioma
+        </div>
+        <LanguageSelector
+          currentLanguage={lang}
+          onSelectLanguage={onSelectLanguage}
+        />
+      </div>
+
       {/* КАРТОЧКА ПРОФИЛЯ И ТЕКУЩЕГО УРОВНЯ */}
       <div className="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-soft flex items-center gap-3.5">
         <img
@@ -92,17 +115,75 @@ export const SettingsAndKycScreen: React.FC<SettingsAndKycScreenProps> = ({
             {levelInfo.stageTitle}
           </div>
           <div className="text-[11px] text-slate-500 font-semibold mt-0.5">
-            Опыт: <strong className="text-slate-800">{state.xp} XP</strong> •
-            Рейтинг: <strong className="text-amber-700">{rp} RP</strong> • Квесты:{' '}
-            {completedQuestsCount}/4
+            Опыт: <strong className="text-slate-800">{state.xp} XP</strong> •{' '}
+            <strong className="text-indigo-700">💎 {state.nztGems} NZT</strong> •
+            Рейтинг: <strong className="text-amber-700">{rp} RP</strong> ({completedQuestsCount}/4)
           </div>
         </div>
+      </div>
+
+      {/* КНОПКА / ВКЛАДКА ОТКРЫТИЯ ОТДЕЛЬНОГО РАЗДЕЛА F.A.Q. ВНУТРИ НАСТРОЕК */}
+      <div className="bg-white rounded-3xl p-3.5 border-2 border-sky-400/60 shadow-soft">
+        <button
+          type="button"
+          data-testid="settings-faq-tab"
+          onClick={() => {
+            haptics.selection();
+            setIsFaqOpen((prev) => !prev);
+          }}
+          className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-black text-xs flex items-center justify-between shadow-sm transition-all"
+        >
+          <span>{t.faqTabButton}</span>
+          <span>{isFaqOpen ? '▲' : '▼'}</span>
+        </button>
+
+        {isFaqOpen && (
+          <div
+            data-testid="faq-section"
+            className="mt-3 space-y-2.5 pt-2 border-t border-slate-100 animate-float-up"
+          >
+            <h3 className="text-xs font-black text-slate-900 px-1">
+              {t.faqSectionTitle}
+            </h3>
+            {t.faqItems.map((item, idx) => (
+              <div
+                key={idx}
+                data-testid={`faq-item-${idx + 1}`}
+                className="bg-slate-50 rounded-2xl p-3 border border-slate-200/90"
+              >
+                <div className="text-xs font-black text-slate-900 mb-1">
+                  {item.q}
+                </div>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  {item.a}
+                </p>
+              </div>
+            ))}
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={onOpenFriendsModal}
+                className="py-2.5 px-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-[11px] font-black"
+              >
+                🤝 Открыть Win-Win Рефералку
+              </button>
+              <button
+                type="button"
+                onClick={onOpenNztLab}
+                className="py-2.5 px-3 rounded-xl bg-indigo-50 border border-indigo-300 text-indigo-800 text-[11px] font-black"
+              >
+                💎 Открыть Лабораторию NZT
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ЗАГОЛОВОК КВЕСТОВ ПРОФИЛЯ */}
       <div className="px-1">
         <h3 className="text-sm font-black text-slate-900">
-          🛡️ Прокачка профиля и KYC (до +185 XP сразу!)
+          🛡️ {t.settingsTitle} (до +185 XP и +1 💎 NZT!)
         </h3>
         <p className="text-xs text-slate-500">
           Каждое заполненное поле закрепляет за тобой прогресс и начисляет опыт
@@ -207,7 +288,7 @@ export const SettingsAndKycScreen: React.FC<SettingsAndKycScreenProps> = ({
         </div>
       </div>
 
-      {/* 3. KYC ВЕРИФИКАЦИЯ ПРОФИЛЯ (+80 XP) */}
+      {/* 3. KYC ВЕРИФИКАЦИЯ ПРОФИЛЯ (+80 XP + 1 💎 NZT) */}
       <div className="bg-white rounded-3xl p-4 border-2 border-indigo-500/40 shadow-soft">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
@@ -217,7 +298,7 @@ export const SettingsAndKycScreen: React.FC<SettingsAndKycScreenProps> = ({
                 KYC Верификация профиля
               </div>
               <div className="text-[10px] text-slate-500">
-                Открывает статус проверенного участника Лидерборда
+                Даёт +80 XP и +1 редкий 💎 NZT-Кристалл Ясности!
               </div>
             </div>
           </div>
@@ -228,7 +309,9 @@ export const SettingsAndKycScreen: React.FC<SettingsAndKycScreenProps> = ({
                 : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
             }`}
           >
-            {state.profileQuests.kycClaimed ? 'KYC Пройден +80 XP ✓' : '+80 XP'}
+            {state.profileQuests.kycClaimed
+              ? 'KYC Пройден +80 XP + 1 💎 ✓'
+              : '+80 XP + 1 💎 NZT'}
           </span>
         </div>
 
@@ -300,8 +383,8 @@ export const SettingsAndKycScreen: React.FC<SettingsAndKycScreenProps> = ({
           }`}
         >
           {state.profileQuests.kycClaimed
-            ? '✓ KYC Верификация подтверждена (+80 XP)'
-            : '🛡️ Пройти KYC и получить +80 XP'}
+            ? '✓ KYC Верификация подтверждена (+80 XP) • +1 💎 NZT'
+            : '🛡️ Пройти KYC и получить +80 XP (+1 💎 NZT)'}
         </button>
       </div>
 

@@ -6,16 +6,20 @@ import {
   formatUzs,
 } from '../../types/game';
 import { LevelInfo } from '../../config/xp';
+import { SupportedLanguage, TRANSLATIONS } from '../../i18n/translations';
+import { LanguageSelector } from '../Common/LanguageSelector';
 import { buildRankedLeaderboard } from '../Modals/LeaderboardModal';
 import { useTelegram } from '../../hooks/useTelegram';
 
 interface MainCharacterScreenProps {
   state: LimitlessGameState;
   levelInfo: LevelInfo;
+  onSelectLanguage: (lang: SupportedLanguage) => void;
   onOpenLeaderboard: () => void;
   onOpenGoalsModal: () => void;
   onOpenPaydayModal: () => void;
   onOpenFriendsModal: () => void;
+  onOpenNztLab: () => void;
   onNavigateKyc: () => void;
   onNavigateFinance: () => void;
   onRestartTutorial: () => void;
@@ -24,10 +28,12 @@ interface MainCharacterScreenProps {
 export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
   state,
   levelInfo,
+  onSelectLanguage,
   onOpenLeaderboard,
   onOpenGoalsModal,
   onOpenPaydayModal,
   onOpenFriendsModal,
+  onOpenNztLab,
   onNavigateKyc,
   onNavigateFinance,
   onRestartTutorial,
@@ -35,6 +41,8 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
   const { haptics } = useTelegram();
   const [quoteIndex, setQuoteIndex] = useState(0);
 
+  const lang = state.language || 'ru';
+  const t = TRANSLATIONS[lang];
   const profile = CHARACTER_PROFILES[state.gender];
   const paydayMetrics = calculateSafePaydayMetrics(state);
 
@@ -58,17 +66,24 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
   return (
     <div
       data-testid="main-character-screen"
-      className="space-y-3 pb-24 animate-float-up"
+      className="space-y-2.5 pb-24 animate-float-up"
     >
-      {/* 1. ВЕРХНЯЯ ПАНЕЛЬ (HUD): Уровень, Стадия ясности, Прогресс XP и Стрик */}
+      {/* ПЕРЕКЛЮЧАТЕЛЬ 6 ЯЗЫКОВ (UZ, RU, EN, DE, KO, ES) */}
+      <LanguageSelector
+        currentLanguage={lang}
+        onSelectLanguage={onSelectLanguage}
+        compact
+      />
+
+      {/* 1. ВЕРХНЯЯ ПАНЕЛЬ (HUD): Уровень, Стадия ясности, 💎 NZT, Стрик и Прогресс XP */}
       <div className="bg-white rounded-3xl p-3.5 border border-slate-200/90 shadow-soft">
-        <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center justify-between gap-1.5 mb-2">
           <div className="flex items-center gap-2 min-w-0">
             <span
               data-testid="hud-level"
               className="inline-flex items-center justify-center bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-black px-3 py-1 rounded-full shadow-xs shrink-0"
             >
-              Уровень {levelInfo.level}
+              {t.levelWord} {levelInfo.level}
             </span>
             <div className="min-w-0">
               <div
@@ -78,25 +93,51 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
                 {levelInfo.stageTitle}
               </div>
               <div className="text-[10px] font-semibold text-slate-500 truncate">
-                Герой: {state.playerName} • Всего {state.xp} XP
+                {state.playerName} • {state.xp} XP
+                {state.xpMultiplier > 1 && (
+                  <span className="ml-1 text-indigo-600 font-black">
+                    (×{state.xpMultiplier} XP)
+                  </span>
+                )}
               </div>
             </div>
           </div>
 
-          <div
-            data-testid="hud-streak"
-            className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-black px-2.5 py-1 rounded-full shrink-0"
-          >
-            <span>🔥</span>
-            <span>{state.streak} дн.</span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Редкая игровая валюта: 💎 NZT (Клик открывает Лабораторию NZT) */}
+            <button
+              type="button"
+              data-testid="hud-nzt-btn"
+              onClick={() => {
+                haptics.selection();
+                onOpenNztLab();
+              }}
+              className="inline-flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 border border-indigo-300 text-indigo-800 text-xs font-black px-2.5 py-1 rounded-full shadow-2xs transition-all active:scale-95"
+              title={t.nztLabTitle}
+            >
+              <span>💎</span>
+              <span data-testid="hud-nzt-currency">{state.nztGems} NZT</span>
+            </button>
+
+            {/* Стрик ударных дней */}
+            <div
+              data-testid="hud-streak"
+              className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-black px-2.5 py-1 rounded-full"
+            >
+              <span>{state.streakShieldActive ? '🧊🔥' : '🔥'}</span>
+              <span>{state.streak} дн.</span>
+            </div>
           </div>
         </div>
 
         {/* Шкала XP до следующего уровня */}
         <div>
           <div className="flex items-center justify-between text-[11px] font-bold mb-1">
-            <span className="text-emerald-700">Прогресс ясности ума</span>
-            <span data-testid="hud-xp-text" className="text-slate-700 font-extrabold">
+            <span className="text-emerald-700">{t.clarityProgress}</span>
+            <span
+              data-testid="hud-xp-text"
+              className="text-slate-700 font-extrabold"
+            >
               {levelInfo.xpInCurrentLevel} / {levelInfo.xpNeededForLevel} XP до Ур.{' '}
               {Math.min(80, levelInfo.level + 1)}
             </span>
@@ -127,13 +168,13 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-black text-slate-900">
-                Лидерборд Топ 1–2–3
+                {t.leaderboardTop}
               </span>
               <span
                 data-testid="main-leaderboard-rank"
                 className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full"
               >
-                Твоё место: #{playerEntry.rank}
+                {t.yourRank}: #{playerEntry.rank}
               </span>
             </div>
             <div className="flex items-center gap-2 text-[10px] font-bold text-slate-600 truncate mt-0.5">
@@ -144,7 +185,7 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
           </div>
         </div>
         <span className="text-xs font-black text-amber-700 shrink-0 ml-1">
-          Открыть →
+          {t.openBtn}
         </span>
       </button>
 
@@ -162,14 +203,14 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
             }}
             className="group flex flex-col items-center focus:outline-none"
           >
-            <div className="w-13 h-13 w-[52px] h-[52px] rounded-full bg-white border-2 border-amber-400 shadow-md flex flex-col items-center justify-center group-active:scale-90 transition-transform">
+            <div className="w-[52px] h-[52px] rounded-full bg-white border-2 border-amber-400 shadow-md flex flex-col items-center justify-center group-active:scale-90 transition-transform">
               <span className="text-lg leading-none">🏆</span>
               <span className="text-[8px] font-black text-amber-700 mt-0.5">
                 1-2-3
               </span>
             </div>
             <span className="text-[10px] font-extrabold text-slate-700 mt-1 leading-tight text-center">
-              Топ 1-2-3
+              {t.orbTop}
             </span>
           </button>
 
@@ -190,7 +231,7 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
               </span>
             </div>
             <span className="text-[10px] font-extrabold text-slate-700 mt-1 leading-tight text-center">
-              Цели/Долги
+              {t.orbGoals}
             </span>
           </button>
 
@@ -211,7 +252,7 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
               </span>
             </div>
             <span className="text-[10px] font-extrabold text-slate-700 mt-1 leading-tight text-center">
-              Лимит до ЗП
+              {t.orbPayday}
             </span>
           </button>
         </div>
@@ -220,18 +261,22 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
         <div
           data-testid="main-character-card"
           onClick={handleCharacterTap}
-          className="cursor-pointer bg-white rounded-3xl p-2.5 border-2 border-emerald-500/70 animate-limitless-aura flex flex-col items-center text-center relative overflow-hidden"
+          className={`cursor-pointer bg-white rounded-3xl p-2.5 border-2 animate-limitless-aura flex flex-col items-center text-center relative overflow-hidden ${
+            state.vipAuraUnlocked
+              ? 'border-amber-400 shadow-glow-amber'
+              : 'border-emerald-500/70'
+          }`}
         >
           {/* Бейдж суперсилы сверху */}
           <div className="inline-flex items-center gap-1 bg-gradient-to-r from-emerald-50 to-sky-50 border border-emerald-200 text-emerald-800 text-[10px] font-black px-2.5 py-0.5 rounded-full mb-2">
-            <span>⚡</span>
+            <span>{state.vipAuraUnlocked ? '👑' : '⚡'}</span>
             <span data-testid="character-superpower-badge">
               {profile.superpowerBadge}
             </span>
           </div>
 
           {/* Иллюстрация персонажа */}
-          <div className="relative w-full aspect-[4/5] max-h-[240px] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 mb-2">
+          <div className="relative w-full aspect-[4/5] max-h-[235px] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 mb-2">
             <img
               data-testid="main-character-image"
               src={profile.imageUrl}
@@ -267,7 +312,7 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
 
         {/* КОЛОНКА КРУГЛЯШКОВ СПРАВА */}
         <div className="flex flex-col items-center gap-3 z-10">
-          {/* Кругляшок 1 Справа: Друзья +XP */}
+          {/* Кругляшок 1 Справа: Друзья +XP (Win-Win) */}
           <button
             type="button"
             data-testid="orb-friends"
@@ -280,11 +325,11 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
             <div className="w-[52px] h-[52px] rounded-full bg-white border-2 border-emerald-400 shadow-md flex flex-col items-center justify-center group-active:scale-90 transition-transform">
               <span className="text-lg leading-none">🤝</span>
               <span className="text-[8px] font-black text-emerald-700 mt-0.5">
-                +50 XP
+                +1 💎
               </span>
             </div>
             <span className="text-[10px] font-extrabold text-slate-700 mt-1 leading-tight text-center">
-              Друзья +XP
+              {t.orbFriends}
             </span>
           </button>
 
@@ -305,7 +350,7 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
               </span>
             </div>
             <span className="text-[10px] font-extrabold text-slate-700 mt-1 leading-tight text-center">
-              KYC +80 XP
+              {t.orbKyc}
             </span>
           </button>
 
@@ -326,7 +371,7 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
               </span>
             </div>
             <span className="text-[10px] font-extrabold text-slate-700 mt-1 leading-tight text-center">
-              Гид
+              {t.orbGuide}
             </span>
           </button>
         </div>
@@ -345,7 +390,7 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
           <div className="flex items-center gap-1.5">
             <span className="text-base">💡</span>
             <span className="text-xs font-black text-slate-900">
-              Сколько реально доступно до зарплаты
+              {t.safeLimitTitle}
             </span>
           </div>
           <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
@@ -356,7 +401,7 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
         <div className="grid grid-cols-3 gap-2 bg-slate-50 rounded-2xl p-2.5 border border-slate-200/80 mb-2.5">
           <div>
             <div className="text-[10px] font-bold text-slate-500">
-              Свободно до ЗП
+              {t.freeUntilPayday}
             </div>
             <div
               data-testid="free-balance-value"
@@ -368,7 +413,7 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
 
           <div className="border-x border-slate-200 px-2">
             <div className="text-[10px] font-bold text-slate-500">
-              Дней до ЗП
+              {t.daysUntilPayday}
             </div>
             <div
               data-testid="days-until-payday-value"
@@ -380,7 +425,7 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
 
           <div>
             <div className="text-[10px] font-bold text-emerald-700">
-              Лимит на сегодня
+              {t.dailyLimitLabel}
             </div>
             <div
               data-testid="safe-daily-limit-value"
@@ -393,7 +438,7 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
 
         <div className="flex items-center justify-between text-[11px]">
           <span className="text-slate-500 font-medium">
-            Обязательные платежи: {formatUzs(paydayMetrics.mandatoryDebtsTotal)} сум
+            {t.mandatoryPaymentsLabel}: {formatUzs(paydayMetrics.mandatoryDebtsTotal)} сум
           </span>
           <button
             type="button"
@@ -404,7 +449,7 @@ export const MainCharacterScreen: React.FC<MainCharacterScreenProps> = ({
             }}
             className="text-emerald-700 font-black hover:underline"
           >
-            + Записать трату / приход →
+            {t.recordTxLink}
           </button>
         </div>
       </div>

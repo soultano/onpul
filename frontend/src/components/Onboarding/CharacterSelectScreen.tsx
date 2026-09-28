@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
 import { CHARACTER_PROFILES } from '../../data/limitlessContent';
 import { CharacterGender } from '../../types/game';
+import { SupportedLanguage } from '../../i18n/translations';
+import { LanguageSelector } from '../Common/LanguageSelector';
 import { useTelegram } from '../../hooks/useTelegram';
 
 interface CharacterSelectScreenProps {
   initialName?: string;
+  currentLanguage: SupportedLanguage;
+  onSelectLanguage: (lang: SupportedLanguage) => void;
   onStartGame: (gender: CharacterGender, playerName: string) => void;
 }
 
 export const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
   initialName,
+  currentLanguage,
+  onSelectLanguage,
   onStartGame,
 }) => {
   const { haptics } = useTelegram();
@@ -36,10 +42,19 @@ export const CharacterSelectScreen: React.FC<CharacterSelectScreenProps> = ({
   return (
     <div
       data-testid="character-select-screen"
-      className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between max-w-md mx-auto px-4 py-6"
+      className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between max-w-md mx-auto px-4 py-5"
     >
+      {/* Переключатель 6 языков */}
+      <div className="mb-2">
+        <LanguageSelector
+          currentLanguage={currentLanguage}
+          onSelectLanguage={onSelectLanguage}
+          compact
+        />
+      </div>
+
       {/* Шапка приветствия */}
-      <div className="text-center mb-4">
+      <div className="text-center mb-3">
         <div className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-extrabold px-3.5 py-1 rounded-full mb-2 shadow-sm">
           <span>🧠</span>
           <span>OnPul: ФинУровень • Limitless Edition</span>

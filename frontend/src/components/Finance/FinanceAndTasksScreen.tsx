@@ -10,6 +10,10 @@ import {
   calculateSafePaydayMetrics,
   formatUzs,
 } from '../../types/game';
+import {
+  GOAL_CATEGORY_PRESETS,
+  TRANSLATIONS,
+} from '../../i18n/translations';
 import { useTelegram } from '../../hooks/useTelegram';
 
 interface FinanceAndTasksScreenProps {
@@ -26,7 +30,8 @@ interface FinanceAndTasksScreenProps {
     kind: 'goal' | 'debt',
     title: string,
     amount: number,
-    dueDateOrTarget: string
+    dueDateOrTarget: string,
+    category?: string
   ) => void;
 }
 
@@ -37,6 +42,8 @@ export const FinanceAndTasksScreen: React.FC<FinanceAndTasksScreenProps> = ({
   onAddGoalOrDebt,
 }) => {
   const { haptics } = useTelegram();
+  const lang = state.language || 'ru';
+  const t = TRANSLATIONS[lang];
 
   // Состояние быстрого трекера Приходов / Расходов
   const [txType, setTxType] = useState<'expense' | 'income'>('expense');
@@ -51,23 +58,35 @@ export const FinanceAndTasksScreen: React.FC<FinanceAndTasksScreenProps> = ({
   // Состояние Ежедневных заданий (7 дней)
   const firstUncompletedDay =
     DAILY_LITERACY_TASKS.find(
-      (t) => !state.completedDailyTasks.includes(t.day)
+      (task) => !state.completedDailyTasks.includes(task.day)
     )?.day || 1;
   const [activeDay, setActiveDay] = useState<number>(firstUncompletedDay);
   const currentTask =
-    DAILY_LITERACY_TASKS.find((t) => t.day === activeDay) ||
+    DAILY_LITERACY_TASKS.find((task) => task.day === activeDay) ||
     DAILY_LITERACY_TASKS[0];
   const [selectedQuizOption, setSelectedQuizOption] = useState<number>(
     currentTask.correctIndex
   );
 
-  // Состояние блока Целей и Долгов
+  // Состояние блока Целей и Долгов + Выпадающее меню категорий
   const [goalKind, setGoalKind] = useState<'goal' | 'debt'>('goal');
-  const [goalTitle, setGoalTitle] = useState<string>('Подушка безопасности');
-  const [goalAmount, setGoalAmount] = useState<string>('500000');
-  const [goalDue, setGoalDue] = useState<string>('До конца месяца');
+  const [selectedGoalCategory, setSelectedGoalCategory] =
+    useState<string>('car');
+  const [goalTitle, setGoalTitle] = useState<string>('Автомобиль мечты');
+  const [goalAmount, setGoalAmount] = useState<string>('150000000');
+  const [goalDue, setGoalDue] = useState<string>('До конца года');
 
   const paydayMetrics = calculateSafePaydayMetrics(state);
+
+  const handleGoalCategorySelect = (catId: string) => {
+    haptics.selection();
+    setSelectedGoalCategory(catId);
+    const preset = GOAL_CATEGORY_PRESETS.find((p) => p.id === catId);
+    if (preset) {
+      setGoalTitle(preset.defaultTitles[lang] || preset.defaultTitles.ru);
+      setGoalAmount(String(preset.recommendedAmount));
+    }
+  };
 
   const handleTxSubmit = () => {
     haptics.notification('success');
@@ -101,10 +120,10 @@ export const FinanceAndTasksScreen: React.FC<FinanceAndTasksScreenProps> = ({
   const handleCompleteTask = () => {
     haptics.notification('success');
     onCompleteDailyTask(currentTask.day);
-    // Переключаем на следующий невыполненный день, если есть
     const nextTask = DAILY_LITERACY_TASKS.find(
-      (t) =>
-        t.day !== currentTask.day && !state.completedDailyTasks.includes(t.day)
+      (task) =>
+        task.day !== currentTask.day &&
+        !state.completedDailyTasks.includes(task.day)
     );
     if (nextTask) {
       setActiveDay(nextTask.day);
@@ -118,7 +137,13 @@ export const FinanceAndTasksScreen: React.FC<FinanceAndTasksScreenProps> = ({
       goalTitle.trim() ||
       (goalKind === 'goal' ? 'Цель без рассрочки' : 'Обязательный платёж');
     const cleanAmount = Math.max(10000, Number(goalAmount) || 300000);
-    onAddGoalOrDebt(goalKind, cleanTitle, cleanAmount, goalDue || 'Планово');
+    onAddGoalOrDebt(
+      goalKind,
+      cleanTitle,
+      cleanAmount,
+      goalDue || 'Планово',
+      selectedGoalCategory
+    );
   };
 
   const isCurrentTaskCompleted = state.completedDailyTasks.includes(
@@ -133,13 +158,13 @@ export const FinanceAndTasksScreen: React.FC<FinanceAndTasksScreenProps> = ({
       {/* ВЕРХНЯЯ ПЛАШКА: ЖИВОЙ ПУЛЬС БЮДЖЕТА ДО ЗАРПЛАТЫ */}
       <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-3xl p-4 text-white shadow-lg shadow-emerald-600/20">
         <div className="flex items-center justify-between text-xs font-bold text-emerald-100 mb-1">
-          <span>⚡ Пульт управления деньгами</span>
+          <span>⚡ {t.financeHeaderTitle}</span>
           <span>До ЗП: {paydayMetrics.daysUntilPayday} дн.</span>
         </div>
         <div className="grid grid-cols-2 gap-3 pt-1">
           <div>
             <div className="text-[11px] text-emerald-100">
-              Свободно до зарплаты
+              {t.freeUntilPayday}
             </div>
             <div
               data-testid="finance-free-balance"
@@ -150,7 +175,7 @@ export const FinanceAndTasksScreen: React.FC<FinanceAndTasksScreenProps> = ({
           </div>
           <div className="border-l border-emerald-400/40 pl-3">
             <div className="text-[11px] text-emerald-100">
-              Безопасный лимит в день
+              {t.dailyLimitLabel}
             </div>
             <div
               data-testid="finance-daily-limit"
@@ -170,11 +195,9 @@ export const FinanceAndTasksScreen: React.FC<FinanceAndTasksScreenProps> = ({
         <div className="flex items-center justify-between mb-3">
           <div>
             <h2 className="text-base font-black text-slate-900">
-              Приходы и Расходы за 5 секунд
+              {t.quickTrackerTitle}
             </h2>
-            <p className="text-[11px] text-slate-500">
-              Каждая запись обновляет дневной лимит и качает героя
-            </p>
+            <p className="text-[11px] text-slate-500">{t.quickTrackerSub}</p>
           </div>
           <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-black px-2.5 py-1 rounded-full">
             {txType === 'income' ? '+15 XP' : '+10 XP'}
@@ -372,28 +395,28 @@ export const FinanceAndTasksScreen: React.FC<FinanceAndTasksScreenProps> = ({
             <span>🧠 Задания дня • 1 раз в день</span>
           </div>
           <span className="text-xs font-black text-emerald-600">
-            +100 XP за задание
+            +100 XP (Каждые 3 дня = +1 💎 NZT)
           </span>
         </div>
 
         <h2 className="text-base font-black text-slate-900 mb-2">
-          7 шагов к полной финансовой ясности
+          {t.dailyTasksHeader}
         </h2>
 
         {/* Переключатель 7 дней */}
         <div className="grid grid-cols-7 gap-1.5 mb-3">
-          {DAILY_LITERACY_TASKS.map((t) => {
-            const done = state.completedDailyTasks.includes(t.day);
-            const active = activeDay === t.day;
+          {DAILY_LITERACY_TASKS.map((task) => {
+            const done = state.completedDailyTasks.includes(task.day);
+            const active = activeDay === task.day;
             return (
               <button
-                key={t.day}
+                key={task.day}
                 type="button"
-                data-testid={`daily-task-day-${t.day}`}
+                data-testid={`daily-task-day-${task.day}`}
                 onClick={() => {
                   haptics.selection();
-                  setActiveDay(t.day);
-                  setSelectedQuizOption(t.correctIndex);
+                  setActiveDay(task.day);
+                  setSelectedQuizOption(task.correctIndex);
                 }}
                 className={`py-2 rounded-xl text-xs font-black border transition-all flex flex-col items-center ${
                   active
@@ -403,7 +426,7 @@ export const FinanceAndTasksScreen: React.FC<FinanceAndTasksScreenProps> = ({
                     : 'bg-slate-50 text-slate-700 border-slate-200'
                 }`}
               >
-                <span>Д{t.day}</span>
+                <span>Д{task.day}</span>
                 <span className="text-[9px]">{done ? '✓' : '•'}</span>
               </button>
             );
@@ -492,7 +515,7 @@ export const FinanceAndTasksScreen: React.FC<FinanceAndTasksScreenProps> = ({
         </button>
       </section>
 
-      {/* БЛОК 3: ЦЕЛИ И ОБЯЗАТЕЛЬНЫЕ ПЛАТЕЖИ (ДОЛГИ) */}
+      {/* БЛОК 3: ЦЕЛИ И ОБЯЗАТЕЛЬНЫЕ ПЛАТЕЖИ (С ВЫПАДАЮЩИМ МЕНЮ КАТЕГОРИЙ) */}
       <section
         data-testid="goals-debts-section"
         className="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-soft"
@@ -500,10 +523,10 @@ export const FinanceAndTasksScreen: React.FC<FinanceAndTasksScreenProps> = ({
         <div className="flex items-center justify-between mb-2">
           <div>
             <h2 className="text-base font-black text-slate-900">
-              Цели и Обязательные платежи (Долги)
+              {t.goalsSectionTitle}
             </h2>
             <p className="text-[11px] text-slate-500">
-              Обязательные платежи сразу бронируются из денег до ЗП
+              Выбери цель из списка (Автомобиль, Квартира, Путешествие и др.) или добавь обязательный платёж
             </p>
           </div>
           <span className="bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-black px-2.5 py-1 rounded-full">
@@ -516,7 +539,7 @@ export const FinanceAndTasksScreen: React.FC<FinanceAndTasksScreenProps> = ({
             type="button"
             onClick={() => {
               setGoalKind('goal');
-              setGoalTitle('Цель без кредита');
+              handleGoalCategorySelect(selectedGoalCategory);
             }}
             className={`py-2 rounded-xl text-xs font-extrabold border ${
               goalKind === 'goal'
@@ -531,6 +554,7 @@ export const FinanceAndTasksScreen: React.FC<FinanceAndTasksScreenProps> = ({
             onClick={() => {
               setGoalKind('debt');
               setGoalTitle('Обязательный платёж / Долг');
+              setGoalAmount('450000');
             }}
             className={`py-2 rounded-xl text-xs font-extrabold border ${
               goalKind === 'debt'
@@ -542,13 +566,34 @@ export const FinanceAndTasksScreen: React.FC<FinanceAndTasksScreenProps> = ({
           </button>
         </div>
 
+        {/* ВЫПАДАЮЩЕЕ МЕНЮ КАТЕГОРИЙ ЦЕЛЕЙ (АВТОМОБИЛЬ, КВАРТИРА, ПУТЕШЕСТВИЕ И ДР.) */}
+        {goalKind === 'goal' && (
+          <div className="mb-2.5">
+            <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
+              {t.selectGoalCategoryLabel}
+            </label>
+            <select
+              data-testid="goal-category-select"
+              value={selectedGoalCategory}
+              onChange={(e) => handleGoalCategorySelect(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-emerald-50/70 border border-emerald-300 text-slate-900 font-extrabold text-xs focus:outline-none focus:border-emerald-600"
+            >
+              {GOAL_CATEGORY_PRESETS.map((preset) => (
+                <option key={preset.id} value={preset.id}>
+                  {preset.labels[lang] || preset.labels.ru}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2.5">
           <input
             type="text"
             data-testid="goal-title-input"
             value={goalTitle}
             onChange={(e) => setGoalTitle(e.target.value)}
-            placeholder="Название (Подушка безопасности...)"
+            placeholder="Название (Автомобиль мечты...)"
             className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-bold text-xs"
           />
           <input
@@ -579,25 +624,30 @@ export const FinanceAndTasksScreen: React.FC<FinanceAndTasksScreenProps> = ({
         </button>
 
         <div className="space-y-1.5">
-          {state.goalsAndDebts.map((item) => (
-            <div
-              key={item.id}
-              data-testid="goal-debt-item"
-              className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-200/80 text-xs"
-            >
-              <div>
-                <div className="font-bold text-slate-900">
-                  {item.kind === 'goal' ? '🎯' : '💳'} {item.title}
+          {state.goalsAndDebts.map((item) => {
+            const presetIcon =
+              GOAL_CATEGORY_PRESETS.find((p) => p.id === item.category)?.icon ||
+              (item.kind === 'goal' ? '🎯' : '💳');
+            return (
+              <div
+                key={item.id}
+                data-testid="goal-debt-item"
+                className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-200/80 text-xs"
+              >
+                <div>
+                  <div className="font-bold text-slate-900">
+                    {presetIcon} {item.title}
+                  </div>
+                  <div className="text-[10px] text-slate-500">
+                    {item.dueDateOrTarget}
+                  </div>
                 </div>
-                <div className="text-[10px] text-slate-500">
-                  {item.dueDateOrTarget}
+                <div className="font-black text-slate-800">
+                  {formatUzs(item.amount)} сум
                 </div>
               </div>
-              <div className="font-black text-slate-800">
-                {formatUzs(item.amount)} сум
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
     </div>
